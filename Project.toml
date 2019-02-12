@@ -2,3 +2,8 @@ name = "FewShotAnomalyDetection"
 uuid = "b4ceb2a0-2ec9-11e9-33d8-bb6e5932b8f0"
 authors = ["honzabim <honzabim@gmail.com>"]
 version = "0.1.0"
+
+[deps]
+DiffRules = "b552c78f-8df3-52c6-915a-8e097449b14b"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
