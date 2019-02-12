@@ -1,0 +1,4 @@
+name = "FewShotAnomalyDetection"
+uuid = "b4ceb2a0-2ec9-11e9-33d8-bb6e5932b8f0"
+authors = ["honzabim <honzabim@gmail.com>"]
+version = "0.1.0"

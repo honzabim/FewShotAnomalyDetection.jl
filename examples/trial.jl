@@ -1,0 +1,3 @@
+using FewShotAnomalyDetection
+
+FewShotAnomalyDetection.greet()
