@@ -233,8 +233,8 @@ function rejectionsampling(m, a, b, d)
 	return @. (1 - (1 + b) * ϵ) / (1 - (1 - b) * ϵ)
 end
 
-isaccepted(mask, ϵ, u, m:: Int, a, b, d) = isaccepted(ϵ[mask], u[mask], m, a[mask], b[mask], d[mask]);
-function isaccepted(ϵ, u, m:: Int, a, b, d)
+isaccepted(mask, ϵ, u, m::Int, a, b, d) = isaccepted(ϵ[mask], u[mask], m, a[mask], b[mask], d[mask]);
+function isaccepted(ϵ, u, m::Int, a, b, d)
 	ω = @. (1 - (1 + b) * ϵ) / (1 - (1 - b) * ϵ)
 	t = @. 2 * a * b / (1 - (1 - b) * ϵ)
 	@. (m - 1) * log(t) - t + d >= log(u)

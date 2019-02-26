@@ -1,42 +1,4 @@
-include("bessel.jl")
-
-using Flux
-using NNlib
-using Distributions
-using SpecialFunctions
-using Adapt
-
-"""
-		Implementation of Hyperspherical Variational Auto-Encoders
-
-		Original paper: https://arxiv.org/abs/1804.00891
-
-		SVAE(q,g,zdim,hue,μzfromhidden,κzfromhidden)
-
-		q --- encoder - in this case encoder only encodes from input to a hidden
-						layer which is then transformed into parameters for the latent
-						layer by `μzfromhidden` and `κzfromhidden` functions
-		g --- decoder
-		zdim --- dimension of the latent space
-		hue --- Hyperspherical Uniform Entropy that is part of the KL divergence but depends only on dimensionality so can be computed in constructor
-		μzfromhidden --- function that transforms the hidden layer to μ parameter of the latent layer by normalization
-		κzfromhidden --- transforms hidden layer to κ parameter of the latent layer using softplus since κ is a positive scalar
-"""
-struct SVAE
-	q
-	g
-	zdim
-	hue
-	μzfromhidden
-	κzfromhidden
-
-	"""
-	SVAE(q, g, hdim, zdim, T) Constructor of the S-VAE where `zdim > 3` and T determines the floating point type (default Float32)
-	"""
-	SVAE(q, g, hdim::Integer, zdim::Integer, T = Float32) = new(q, g, zdim, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, softplus)))
-end
-
-Flux.@treelike(SVAE)
+abstract type SVAE end
 
 normalizecolumns(m) = m ./ sqrt.(sum(m .^ 2, dims = 1) .+ eps(eltype(Flux.Tracker.data(m))))
 
@@ -61,18 +23,6 @@ huentropy(m) = m / 2 * log(π) + log(2) - lgamma(m / 2)
 """
 kldiv(model::SVAE, κ) = .- vmfentropy(model.zdim, κ) .+ model.hue
 
-"""
-	loss(m::SVAE, x)
-
-	Loss function of the S-VAE combining reconstruction error and the KL divergence
-"""
-function loss(m::SVAE, x, β)
-	(μz, κz) = zparams(m, x)
-	z = samplez(m, μz, κz)
-	xgivenz = m.g(z)
-	return Flux.mse(x, xgivenz) + β * mean(kldiv(m, κz))
-end
-
 log_normal(x) = - sum((x .^ 2), dims = 1) ./ 2 .- size(x, 1) .* log(2π) ./ 2
 log_normal(x, μ) = log_normal(x - μ)
 
@@ -83,53 +33,23 @@ c(p, κ) = κ ^ (p / 2 - 1) / ((2π) ^ (p / 2) * besseli(p / 2 - 1, κ))
 # log likelihood of one sample under the VMF dist with given parameters
 log_vmf_c(x, μ, κ) = κ * μ' * x .+ log(c(length(μ), κ))
 
-function pairwisecos(x, y)
-	m = x' * y .* (1 - eps(Float32) * size(x, 1) * 3)
-	acos.(m)
-end
+pairwisecos(x, y) = acos.(x' * y .* (1 - eps(eltype(x)) * size(x, 1) * 3)) # This is a bit of a hack to avoid the float operation to input number > 1.0 into acos
 pairwisecos(x) = pairwisecos(x, x)
+
+k_imq(x, y, c) = sum( c./ (c .+ pairwisecos(x, y))) / (size(x, 2) * size(y, 2))
+k_imq(x::T, c) where {T <: AbstractMatrix} = sum(c ./ (c .+ pairwisecos(x))) / (size(x, 2) * (size(x, 2) - 1))
+k_imq(x::T, c) where {T <: AbstractVector} = zero(eltype(x))
+
+mmd_imq(x,y,c) = k_imq(x,c) + k_imq(y,c) - 2 * k_imq(x,y,c)
 
 function samplehsuniform(size...)
 	v = randn(size...)
 	v = normalizecolumns(v)
 end
 
-k_imq(x,y,c) = sum( c./ (c .+ pairwisecos(x,y)))/(size(x,2) * size(y,2))
-k_imq(x::T,c) where {T<:AbstractMatrix} = sum(c ./(c .+ pairwisecos(x)))/(size(x,2) * (size(x,2) -1 ))
-k_imq(x::T,c) where {T<:AbstractVector} = zero(eltype(x))
-
-mmd_imq(x,y,c) = k_imq(x,c) + k_imq(y,c) - 2 * k_imq(x,y,c)
-
-function pxvita(m::SVAE, x)
+function pxexpectedz(m::SVAE, x)
 	xgivenz = m.g(zparams(m, x)[1])
 	Flux.Tracker.data(log_normal(xgivenz, x))
-end
-
-function pz(m::SVAE, x)
-	z = Flux.Tracker.data(zparams(m, x)[1])
-	priorμ = zeros(size(z, 1))
-	priorμ[1] = 1
-	log_vmf_c(z, priorμ, 1)
-end
-
-function wloss_prior(m::SVAE, x, β, d)
-	(μz, κz) = zparams(m, x)
-	z = samplez(m, μz, κz)
-	priorμ = zeros(size(z, 1))
-	priorμ[1] = 1
-	zp = samplez(m, repeat(priorμ, 1, size(z, 2)), repeat([1.], 1, size(z, 2)))
-	Ω = d(z, zp)
-	xgivenz = m.g(z)
-	return Flux.mse(x, xgivenz) + β * Ω
-end
-
-function wloss(m::SVAE, x, β, d)
-	(μz, κz) = zparams(m, x)
-	z = samplez(m, μz, κz)
-	zp = samplehsuniform(size(z))
-	Ω = d(z, zp)
-	xgivenz = m.g(z)
-	return Flux.mse(x, xgivenz) + β * Ω
 end
 
 """
