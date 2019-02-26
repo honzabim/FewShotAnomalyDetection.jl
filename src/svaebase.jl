@@ -3,7 +3,7 @@
 
 		Original paper: https://arxiv.org/abs/1804.00891
 
-		SVAE(q,g,zdim,hue,μzfromhidden,κzfromhidden)
+		SVAEbase(q,g,zdim,hue,μzfromhidden,κzfromhidden)
 
 		q --- encoder - in this case encoder only encodes from input to a hidden
 						layer which is then transformed into parameters for the latent
@@ -23,7 +23,7 @@ struct SVAEbase <: SVAE
 	κzfromhidden
 
 	"""
-	SVAE(q, g, hdim, zdim, T) Constructor of the S-VAE where `zdim > 3` and T determines the floating point type (default Float32)
+	SVAEbase(q, g, hdim, zdim, T) Constructor of the S-VAE where `zdim > 3` and T determines the floating point type (default Float32)
 	"""
 	SVAEbase(q, g, hdim::Integer, zdim::Integer, T = Float32) = new(q, g, zdim, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, softplus)))
 end
@@ -31,7 +31,7 @@ end
 Flux.@treelike(SVAEbase)
 
 """
-	loss(m::SVAE, x)
+	loss(m::SVAEbase, x)
 
 	Loss function of the S-VAE combining reconstruction error and the KL divergence
 """
