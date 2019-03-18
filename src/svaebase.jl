@@ -28,6 +28,12 @@ struct SVAEbase <: SVAE
 	SVAEbase(q, g, hdim::Int, zdim::Int, T = Float32) = new(q, g, zdim, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, softplus)))
 end
 
+function SVAEbase(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, T = Float32)
+	encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, hiddenDim, numLayers - 1, nonlinearity, "", layerType))
+    decoder = Adapt.adapt(T, FluxExtensions.layerbuilder(latentDim, hiddenDim, inputDim, numLayers + 1, nonlinearity, "linear", layerType))
+	return SVAEbase(encoder, decoder, hiddenDim, latentDim, T)
+end
+
 Flux.@treelike(SVAEbase)
 
 """

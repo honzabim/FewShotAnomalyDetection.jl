@@ -7,12 +7,15 @@ using SpecialFunctions
 using Adapt
 using Random
 using LinearAlgebra
+using ADatasets
+using FluxExtensions
 
 include("bessel.jl")
 include("svae.jl")
 include("svaebase.jl")
 include("svaetwocaps.jl")
+include("experimentalutils.jl")
 
-export SVAEbase, loss, wloss
+export SVAEbase, loss, wloss, loaddata, gridsearch, printandrun
 
 end
