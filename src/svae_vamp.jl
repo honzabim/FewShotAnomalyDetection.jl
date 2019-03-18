@@ -37,7 +37,7 @@ mutable struct SVAE_vamp
 	"""
 	SVAE_vamp(q, g, hdim, zdim, T) Constructor of the S-VAE where `zdim > 3` and T determines the floating point type (default Float32)
 	"""
-	SVAE_vamp(q, g, hdim::Integer, zdim::Integer, num_pseudoinputs::Integer, β, T = Float32) = new(q, g, zdim, β, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, softplus)), Flux.param(Adapt.adapt(T, normalizecolumns(randn(size(q[1].W, 2), num_pseudoinputs)))))
+	SVAE_vamp(q, g, hdim::Int, zdim::Int, num_pseudoinputs::Int, β, T = Float32) = new(q, g, zdim, β, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, softplus)), Flux.param(Adapt.adapt(T, normalizecolumns(randn(size(q[1].W, 2), num_pseudoinputs)))))
 end
 
 Flux.@treelike(SVAE_vamp)
@@ -147,7 +147,7 @@ end
 # 	return log_vmf(Flux.Tracker.data(μz), Flux.Tracker.data(.-m.anom_priorμ), Flux.Tracker.data(m.anom_priorκ[1]))
 # end
 
-function sampleVamp(m::SVAE_vamp, n::Integer)
+function sampleVamp(m::SVAE_vamp, n::Int)
 	components = rand(1:size(m.pseudo_inputs, 2), n)
 	(μz, κz) = zparams(m, m.pseudo_inputs[:, components])
 	return samplez(m, μz, κz)

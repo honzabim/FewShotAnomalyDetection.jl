@@ -13,4 +13,6 @@ include("svae.jl")
 include("svaebase.jl")
 include("svaetwocaps.jl")
 
+export SVAEbase, loss, wloss
+
 end

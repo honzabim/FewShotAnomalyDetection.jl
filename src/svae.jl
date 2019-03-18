@@ -121,14 +121,14 @@ end
 function rejectionsampling(m, a, b, d)
 	beta = Beta((m - 1) / 2, (m - 1) / 2)
 	T = eltype(Flux.Tracker.data(a))
-	ϵ, u = Adapt.adapt(T, rand(beta, size(a)...)), Adapt.adapt(T, rand(T, size(a)))
+	ϵ, u = Adapt.adapt(T, rand(beta, size(a)...)), rand(T, size(a)...)
 
 	accepted = isaccepted(ϵ, u, m, Flux.data(a), Flux.Tracker.data(b), Flux.data(d))
 	it = 0
 	while (!all(accepted)) & (it < 10000)
 		mask = .! accepted
 		ϵ[mask] = Adapt.adapt(T, rand(beta, sum(mask)))
-		u[mask] = Adapt.adapt(T, rand(T, sum(mask)))
+		u[mask] = rand(T, sum(mask))
 		accepted[mask] = isaccepted(mask, ϵ, u, m, Flux.data(a), Flux.data(b), Flux.data(d))
 		it += 1
 	end
@@ -137,6 +137,22 @@ function rejectionsampling(m, a, b, d)
 	end
 	return @. (1 - (1 + b) * ϵ) / (1 - (1 - b) * ϵ)
 end
+
+# function rejectionsampling(m, a, b, d)
+# 	beta = Beta((m - 1) / 2, (m - 1) / 2)
+# 	T = eltype(Flux.Tracker.data(a))
+# 	ϵ, u = Adapt.adapt(T, rand(beta, size(a)...)), rand(T, size(a)...)
+#
+# 	accepted = isaccepted(ϵ, u, m, Flux.data(a), Flux.Tracker.data(b), Flux.data(d))
+# 	while !all(accepted)
+# 		mask = .! accepted
+# 		ϵ[mask] = Adapt.adapt(T, rand(beta, sum(mask)))
+# 		u[mask] = rand(T, sum(mask))
+# 		ia = isaccepted(mask, ϵ, u, m, Flux.data(a), Flux.data(b), Flux.data(d))
+# 		accepted[mask] = ia
+# 	end
+# 	return @. (1 - (1 + b) * ϵ) / (1 - (1 - b) * ϵ)
+# end
 
 isaccepted(mask, ϵ, u, m:: Int, a, b, d) = isaccepted(ϵ[mask], u[mask], m, a[mask], b[mask], d[mask]);
 function isaccepted(ϵ, u, m:: Int, a, b, d)

@@ -38,7 +38,7 @@ mutable struct SVAE_anom
 	"""
 	SVAE_anom(q, g, hdim, zdim, T) Constructor of the S-VAE where `zdim > 3` and T determines the floating point type (default Float32)
 	"""
-	SVAE_anom(q, g, hdim::Integer, zdim::Integer, β, T = Float32) = new(q, g, zdim, β, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, softplus)), Flux.param(Adapt.adapt(T, normalize(randn(zdim)))), Flux.param(Adapt.adapt(T, [1.])))
+	SVAE_anom(q, g, hdim::Int, zdim::Int, β, T = Float32) = new(q, g, zdim, β, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, softplus)), Flux.param(Adapt.adapt(T, normalize(randn(zdim)))), Flux.param(Adapt.adapt(T, [1.])))
 end
 
 Flux.@treelike(SVAE_anom)
