@@ -56,10 +56,3 @@ function wloss(m::SVAEbase, x, β, d)
 	xgivenz = m.g(z)
 	return Flux.mse(x, xgivenz) + β * Ω
 end
-
-function pz(m::SVAEbase, x)
-	z = Flux.Tracker.data(zparams(m, x)[1])
-	priorμ = zeros(size(z, 1))
-	priorμ[1] = 1
-	log_vmf_c(z, priorμ, 1)
-end

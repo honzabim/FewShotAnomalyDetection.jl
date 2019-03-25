@@ -95,6 +95,12 @@ git-tree-sha1 = "195a3ffcb8b0762684b6821de18f83a16455c6ea"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
 version = "2.0.0"
 
+[[Conda]]
+deps = ["Compat", "JSON", "VersionParsing"]
+git-tree-sha1 = "b625d802587c2150c279a40a646fba63f9bd8187"
+uuid = "8f4d0f93-b110-5947-807f-2305c1781a2d"
+version = "1.2.0"
+
 [[DataFrames]]
 deps = ["CategoricalArrays", "CodecZlib", "Compat", "DataStreams", "Dates", "InteractiveUtils", "IteratorInterfaceExtensions", "LinearAlgebra", "Missings", "Printf", "Random", "Reexport", "SortingAlgorithms", "Statistics", "StatsBase", "TableTraits", "Tables", "Test", "TranscodingStreams", "Unicode", "WeakRefStrings"]
 git-tree-sha1 = "9cfed75401d25d281076eb5d82de148ac2933f9e"
@@ -166,6 +172,14 @@ deps = ["GenericLinearAlgebra", "LinearAlgebra", "Polynomials", "Random", "Test"
 git-tree-sha1 = "4a6ebd14eb2ed4e249fc352884abc19d32b39c06"
 uuid = "497a8b3b-efae-58df-a0af-a86822472b78"
 version = "0.7.13"
+
+[[EvalCurves]]
+deps = ["LinearAlgebra", "PyPlot", "Statistics"]
+git-tree-sha1 = "4c599d7f25ecc285a45d43c93649bdc347dcd725"
+repo-rev = "master"
+repo-url = "https://github.com/vitskvara/EvalCurves.jl.git"
+uuid = "f38dcc0d-dce9-59d8-8cbc-ed225c093724"
+version = "0.0.0"
 
 [[FileIO]]
 deps = ["Pkg", "Random", "Test"]
@@ -254,6 +268,12 @@ deps = ["Base64", "Logging", "Media", "Profile", "Test"]
 git-tree-sha1 = "dc568a3dbc4d0505d252d104bed03710a9a39441"
 uuid = "e5e0dc1b-0480-54bc-9374-aad01c23163d"
 version = "0.5.5"
+
+[[LaTeXStrings]]
+deps = ["Compat"]
+git-tree-sha1 = "7ab9b8788cfab2bdde22adf9004bda7ad9954b6c"
+uuid = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
+version = "1.0.3"
 
 [[LearnBase]]
 deps = ["LinearAlgebra", "SparseArrays", "StatsBase", "Test"]
@@ -379,9 +399,9 @@ version = "0.10.3"
 
 [[Parsers]]
 deps = ["Dates", "Mmap", "Test", "WeakRefStrings"]
-git-tree-sha1 = "dc0469396c9b221223861558ad89141be38635b4"
+git-tree-sha1 = "d4e634c9cab597f0ec8f5a1d62c0787e98602c55"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "0.2.20"
+version = "0.2.22"
 
 [[Pkg]]
 deps = ["Dates", "LibGit2", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
@@ -412,6 +432,18 @@ uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 [[Profile]]
 deps = ["Printf"]
 uuid = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
+
+[[PyCall]]
+deps = ["Conda", "Dates", "Libdl", "LinearAlgebra", "MacroTools", "Serialization", "Statistics", "Test", "VersionParsing"]
+git-tree-sha1 = "a77c1841800535a02b65be1e2b8202b0d66f8b92"
+uuid = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+version = "1.90.0"
+
+[[PyPlot]]
+deps = ["Colors", "LaTeXStrings", "PyCall", "Sockets", "Test", "VersionParsing"]
+git-tree-sha1 = "a8d4bca4efe9c45c66b900f0a17b40398e581d6f"
+uuid = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+version = "2.8.0"
 
 [[QuadGK]]
 deps = ["DataStructures", "LinearAlgebra", "Test"]
@@ -552,6 +584,12 @@ uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [[Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
+
+[[VersionParsing]]
+deps = ["Compat"]
+git-tree-sha1 = "c9d5aa108588b978bd859554660c8a5c4f2f7669"
+uuid = "81def892-9a0e-5fdd-b105-ffc91e053289"
+version = "1.1.3"
 
 [[WeakRefStrings]]
 deps = ["Missings", "Random", "Test"]

@@ -25,6 +25,7 @@ kldiv(model::SVAE, κ) = .- vmfentropy(model.zdim, κ) .+ model.hue
 
 log_normal(x) = - sum((x .^ 2), dims = 1) ./ 2 .- size(x, 1) .* log(2π) ./ 2
 log_normal(x, μ) = log_normal(x - μ)
+log_normal(x,μ, σ2::AbstractArray{T}) where {T<:Number} = - sum((x - μ) .^ 2 ./ σ2 .+ log.(σ2 .* 2π), dims = 1) / 2
 
 # Likelihood estimation of a sample x under VMF with given parameters taken from https://pdfs.semanticscholar.org/2b5b/724fb175f592c1ff919cc61499adb26996b1.pdf
 # normalizing constant for density function of VMF
@@ -71,7 +72,7 @@ end
 """
 function zparams(model::SVAE, x)
 	hidden = model.q(x)
-	return model.μzfromhidden(hidden), model.κzfromhidden(hidden)
+	return model.μzfromhidden(hidden), max.(model.κzfromhidden(hidden), 10000)
 end
 
 """
@@ -114,11 +115,11 @@ function sampleω(model::SVAE, κ)
 	b = @. (-2κ + c) / (m - 1)
 	a = @. (m - 1 + 2κ + c) / 4
 	d = @. (4 * a * b) / (1 + b) - (m - 1) * log(m - 1)
-	ω = rejectionsampling(m, a, b, d)
+	ω = rejectionsampling(m, a, b, d, κ)
 	return ω
 end
 
-function rejectionsampling(m, a, b, d)
+function rejectionsampling(m, a, b, d, κ)
 	beta = Beta((m - 1) / 2, (m - 1) / 2)
 	T = eltype(Flux.Tracker.data(a))
 	ϵ, u = Adapt.adapt(T, rand(beta, size(a)...)), rand(T, size(a)...)
@@ -134,6 +135,12 @@ function rejectionsampling(m, a, b, d)
 	end
 	if it >= 10000
 		println("Warning - sampler was stopped by 10000 iterations - it did not accept the sample!")
+		println(m)
+		println(a)
+		println(b)
+		println(d)
+		println(κ)
+		println(accepted)
 	end
 	return @. (1 - (1 + b) * ϵ) / (1 - (1 - b) * ϵ)
 end

@@ -45,7 +45,7 @@ end
 
 function runExperiment(datasetName, train, test, createModel, anomalyCounts, batchSize = 100, numBatches = 10000)
     (model, learnRepresentation!, learnAnomaly!) = createModel()
-    opt = Flux.Optimise.ADAM(Flux.params(model), 1e-5)
+    opt = Flux.Optimise.ADAM(Flux.params(model), 1e-3)
     cb = Flux.throttle(() -> println("$datasetName : $(learnAnomaly!(train[1], zero(train[2]) .+ 2))"), 5)
     Flux.train!(learnAnomaly!, RandomBatches((train[1], zero(train[2]) .+ 2), batchSize, numBatches), opt, cb = cb)
     # FluxExtensions.learn(learnRepresentation!, opt, RandomBatches((train[1], train[2] .- 1), batchSize, numBatches), ()->(), 100)
