@@ -7,7 +7,6 @@ using SpecialFunctions
 using Adapt
 using Random
 using LinearAlgebra
-using ADatasets
 using FluxExtensions
 using EvalCurves
 
@@ -15,8 +14,7 @@ include("bessel.jl")
 include("svae.jl")
 include("svaebase.jl")
 include("svaetwocaps.jl")
-include("experimentalutils.jl")
 
-export SVAEbase, SVAEtwocaps, loss, wloss, loaddata, gridsearch, printandrun, computeauc, pxexpectedz, pz, zparams, printing_wloss
+export SVAEbase, SVAEtwocaps, loss, wloss, pxexpectedz, pz, zparams, printing_wloss
 
 end

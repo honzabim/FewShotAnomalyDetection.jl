@@ -7,7 +7,8 @@ using DataFrames
 using CSV
 
 import FewShotAnomalyDetection: loss, zparams
-include("D:/dev/julia/FewShotAnomalyDetection.jl/experiments/vae.jl")
+include("experimentalutils.jl")
+include("vae.jl")
 
 function runExperiment(datasetName, train, test, inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, β, batchSize = 100, numBatches = 10000)
 
@@ -46,13 +47,13 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, latentDim,
     return DataFrame(dataset = datasetName, idim = inputDim, hdim = hiddenDim, ldim = latentDim, layers = numLayers, β = β, auc_pxv = auc_pxv, auc_pz = auc_pz)
 end
 
-outputFolder = FewShotAnomalyDetection.mainfolder * "OSL/experiments/NewImplementationTests/"
+outputFolder = mainfolder * "experiments/twostagesvae/"
 mkpath(outputFolder)
 
 datasets = ["breast-cancer-wisconsin"]
 difficulties = ["easy"]
 batchSize = 100
-iterations = 10000
+iterations = 100
 
 if length(ARGS) != 0
     datasets = [ARGS[1]]

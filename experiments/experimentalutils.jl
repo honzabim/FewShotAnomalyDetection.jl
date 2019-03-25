@@ -1,3 +1,5 @@
+using ADatasets
+
 """
     gridSearch(f, parameters...)
 Maps `f` to product of `parameters`.
