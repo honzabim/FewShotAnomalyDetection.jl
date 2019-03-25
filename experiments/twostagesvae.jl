@@ -50,7 +50,7 @@ end
 outputFolder = mainfolder * "experiments/twostagesvae/"
 mkpath(outputFolder)
 
-datasets = ["breast-cancer-wisconsin"]
+datasets = ["magic-telescope"]
 difficulties = ["easy"]
 batchSize = 100
 iterations = 10000
