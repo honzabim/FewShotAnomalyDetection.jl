@@ -53,7 +53,7 @@ mkpath(outputFolder)
 datasets = ["breast-cancer-wisconsin"]
 difficulties = ["easy"]
 batchSize = 100
-iterations = 100
+iterations = 10000
 
 if length(ARGS) != 0
     datasets = [ARGS[1]]
