@@ -1,4 +1,5 @@
 using ADatasets
+using EvalCurves
 
 """
     gridSearch(f, parameters...)
