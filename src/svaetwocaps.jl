@@ -29,7 +29,7 @@ mutable struct SVAEtwocaps{V<:Val} <: SVAE
 	SVAEtwocaps(q, g, hdim, zdim, T) Constructor of the S-VAE where `zdim > 3` and T determines the floating point type (default Float32)
 	"""
 end
-SVAEtwocaps(q, g, hdim::Int, zdim::Int, μ, v::Symbol = :unit, T = Float32) = SVAEtwocaps(q, g, zdim, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, softplus)), μ, Flux.param(Adapt.adapt(T, [10.])), Val(v))
+SVAEtwocaps(q, g, hdim::Int, zdim::Int, μ, v::Symbol = :unit, T = Float32) = SVAEtwocaps(q, g, zdim, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, softplus)), μ, Flux.param(Adapt.adapt(T, [1.])), Val(v))
 SVAEtwocaps(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, v::Symbol = :unit, T::DataType = Float32) = SVAEtwocaps(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, Flux.param(Adapt.adapt(T, normalize(randn(latentDim)))), v, T)
 function SVAEtwocaps(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, μ::AbstractVector, v::Symbol = :unit, T = Float32)
 	encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, hiddenDim, numLayers - 1, nonlinearity, "", layerType))
@@ -50,14 +50,14 @@ function pz(m::SVAEtwocaps, x)
 end
 
 function set_normal_μ(m::SVAEtwocaps, μ)
-	κz = 10.
+	κz = 1.
 	T = eltype(m.hue)
 	m.priorμ = Flux.param(Adapt.adapt(T, Flux.Tracker.data(μ)))
 	m.priorκ = Flux.param(Adapt.adapt(T, [κz]))
 end
 
 function set_normal_μ_nonparam(m::SVAEtwocaps, μ)
-	κz = 10.
+	κz = 1.
 	T = eltype(m.hue)
 	m.priorμ = Adapt.adapt(T, Flux.Tracker.data(μ))
 	m.priorκ = Adapt.adapt(T, [κz])
@@ -78,18 +78,18 @@ function wloss(m::SVAEtwocaps{V}, x, β, d) where {V <: Val{:unit}}
 	return Flux.mse(x, xgivenz) + β * Ω
 end
 
-function wloss(m::SVAEtwocaps{V}, x, β, d) where {V <: Val{:scalarsigma}}
+function wloss(m::SVAEtwocaps{V}, x, d) where {V <: Val{:scalarsigma}}
 	(μz, κz) = zparams(m, x)
 	z = samplez(m, μz, κz)
 	# zp = samplehsuniform(size(z))
 	prior = samplez(m, ones(size(μz)) .* normalizecolumns(m.priorμ), ones(size(κz)) .* m.priorκ)
 	Ω = d(z, prior)
 	xgivenz = m.g(z)
-	return -mean(log_normal(x, xgivenz[1:end - 1, :], collect(softplus.(xgivenz[end, :])'))) + β * Ω
+	return -mean(log_normal(x, xgivenz[1:end - 1, :], collect(softplus.(xgivenz[end, :])'))) + Ω
 	# return Flux.mse(x, xgivenz[1:end - 1, :]) + β * Ω
 end
 
-function printing_wloss(m::SVAEtwocaps{V}, x, β, d) where {V <: Val{:scalarsigma}}
+function printing_wloss(m::SVAEtwocaps{V}, x, d) where {V <: Val{:scalarsigma}}
 	(μz, κz) = zparams(m, x)
 	z = samplez(m, μz, κz)
 	# zp = samplehsuniform(size(z))
@@ -98,7 +98,7 @@ function printing_wloss(m::SVAEtwocaps{V}, x, β, d) where {V <: Val{:scalarsigm
 	xgivenz = m.g(z)
 	re = -mean(log_normal(x, xgivenz[1:end - 1, :], collect(softplus.(xgivenz[end, :])')))
 	println("loglkl: $re | Wass-dist: $Ω")
-	return re + β * Ω
+	return re + Ω
 	# return Flux.mse(x, xgivenz[1:end - 1, :]) + β * Ω
 end
 

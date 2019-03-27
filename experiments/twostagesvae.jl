@@ -22,8 +22,8 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, latentDim,
     Flux.train!((x, y) -> loss(outerVAE, x), Flux.params(outerVAE), RandomBatches((train[1], zero(train[2])), batchSize, numBatches), opt, cb = cb)
 
     svae = SVAEtwocaps(latentDim, latentDim, latentDim, numLayers, nonlinearity, layerType, :scalarsigma, T)
-    learnRepresentation!(data, labels) = wloss(svae, data, β, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
-    printing_learnRepresentation!(data, labels) = printing_wloss(svae, data, β, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
+    learnRepresentation!(data, labels) = wloss(svae, data, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
+    printing_learnRepresentation!(data, labels) = printing_wloss(svae, data, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
     opt = Flux.Optimise.ADAM(3e-4)
     cb = Flux.throttle(() -> println("$datasetName inner SVAE: $(printing_learnRepresentation!(samplez(outerVAE, train[1]), zero(train[2])))"), 5)
     Flux.train!((x, y) -> learnRepresentation!(samplez(outerVAE, x), y), Flux.params(svae), RandomBatches((train[1], zero(train[2])), batchSize, numBatches), opt, cb = cb)
@@ -50,10 +50,10 @@ end
 outputFolder = mainfolder * "experiments/twostagesvae/"
 mkpath(outputFolder)
 
-datasets = ["magic-telescope"]
+datasets = ["breast-cancer-wisconsin"]
 difficulties = ["easy"]
 batchSize = 100
-iterations = 10000
+iterations = 1000
 
 if length(ARGS) != 0
     datasets = [ARGS[1]]

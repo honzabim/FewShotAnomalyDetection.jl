@@ -34,7 +34,7 @@ c(p, κ) = κ ^ (p / 2 - 1) / ((2π) ^ (p / 2) * besseli(p / 2 - 1, κ))
 # log likelihood of one sample under the VMF dist with given parameters
 log_vmf_c(x, μ, κ) = κ * μ' * x .+ log(c(length(μ), κ))
 
-pairwisecos(x, y) = acos.(x' * y .* (1 - eps(eltype(x)) * size(x, 1) * 3)) # This is a bit of a hack to avoid the float operation to input number > 1.0 into acos
+pairwisecos(x, y) = acos.(x' * y .* (1 - eps(eltype(x)) * size(x, 1) * 5)) # This is a bit of a hack to avoid the float operation to input number > 1.0 into acos
 pairwisecos(x) = pairwisecos(x, x)
 
 k_imq(x, y, c) = sum( c./ (c .+ pairwisecos(x, y))) / (size(x, 2) * size(y, 2))
@@ -72,7 +72,12 @@ end
 """
 function zparams(model::SVAE, x)
 	hidden = model.q(x)
-	return model.μzfromhidden(hidden), max.(model.κzfromhidden(hidden), 10000)
+	if any(isnan.(hidden))
+		println("hidden: $hidden")
+		println("encoder: $(model.q[1].W) $(model.q[1].b) $(model.q[2].W) $(model.q[2].b)")
+	end
+	# return model.μzfromhidden(hidden), max.(model.κzfromhidden(hidden), 1000)
+	return model.μzfromhidden(hidden), model.κzfromhidden(hidden)
 end
 
 """
@@ -93,6 +98,9 @@ function samplez(m::SVAE, μz, κz)
 	v = Adapt.adapt(eltype(Flux.Tracker.data(κz)), rand(normal, size(μz, 1) - 1, size(μz, 2)))
 	v = normalizecolumns(v)
 	z = householderrotation(vcat(ω, sqrt.(1 .- ω .^ 2) .* v), μz)
+	if any(isnan.(z))
+		println("z: $z")
+	end
 	return z
 end
 
@@ -110,6 +118,9 @@ function householderrotation(zprime, μ)
 end
 
 function sampleω(model::SVAE, κ)
+	if any(isnan.(κ))
+		println("κ: $κ")
+	end
 	m = model.zdim
 	c = @. sqrt(4κ ^ 2 + (m - 1) ^ 2)
 	b = @. (-2κ + c) / (m - 1)
