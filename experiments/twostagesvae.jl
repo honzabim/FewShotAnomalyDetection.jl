@@ -53,7 +53,7 @@ mkpath(outputFolder)
 datasets = ["breast-cancer-wisconsin"]
 difficulties = ["easy"]
 batchSize = 100
-iterations = 1000
+iterations = 10000
 
 if length(ARGS) != 0
     datasets = [ARGS[1]]
@@ -67,7 +67,7 @@ for i in 1:10
         println("$dn")
 
         evaluateOneConfig = p -> runExperiment(dn, train, test, size(train[1], 1), p..., batchSize, iterations)
-        results = gridsearch(evaluateOneConfig, [32], [8], [3], ["relu"], ["Dense"], [1.])
+        results = gridsearch(evaluateOneConfig, [32], [8], [3], ["swish"], ["Dense"], [1.])
 
         CSV.write(outputFolder * "twostagesvae-$dn-$df-$i.csv", vcat(results...))
     end
