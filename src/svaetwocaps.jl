@@ -49,6 +49,31 @@ function pz(m::SVAEtwocaps, x)
 	return log_vmf_c(Flux.Tracker.data(μz), Flux.Tracker.data(.-m.priorμ), Flux.Tracker.data(m.priorκ[1]))
 end
 
+function px(m::SVAEtwocaps{V}, x::Matrix, k::Int = 100) where {V <: Val{:scalarsigma}}
+	println(size(x))
+	x = [x[:, i] for i in 1:size(x, 2)]
+	return map(a -> px(m, a, k), x)
+end
+
+function px(m::SVAEtwocaps{V}, x::Vector, k::Int = 100) where {V <: Val{:scalarsigma}}
+	μz, κz = zparams(m, x)
+	# println("μz: $μz")
+	# println("κz: $κz")
+	μz = repeat(Flux.Tracker.data(μz), 1, k)
+	κz = repeat(Flux.Tracker.data(κz), 1, k)
+	z = Flux.Tracker.data(samplez(m, μz, κz))
+	xgivenz = Flux.Tracker.data(m.g(z))
+
+	pxgivenz = log_normal(repeat(x, 1, k), xgivenz[1:end - 1, :], collect(softplus.(xgivenz[end, :])'))
+	# println("pxgivenz: $pxgivenz")
+	pz = log_vmf_wo_c(z, m.priorμ, m.priorκ[1])
+	# println("pz $pz")
+	qzgivenx = log_vmf_wo_c(z, μz[:, 1], κz[1])
+	# println("qzgivenx: $qzgivenx")
+
+	return log(sum(exp.(Flux.Tracker.data(pxgivenz .+ pz .- qzgivenx))))
+end
+
 function set_normal_μ(m::SVAEtwocaps, μ)
 	κz = 1.
 	T = eltype(m.hue)

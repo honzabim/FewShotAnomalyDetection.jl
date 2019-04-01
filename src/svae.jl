@@ -33,6 +33,7 @@ c(p, κ) = κ ^ (p / 2 - 1) / ((2π) ^ (p / 2) * besseli(p / 2 - 1, κ))
 
 # log likelihood of one sample under the VMF dist with given parameters
 log_vmf_c(x, μ, κ) = κ * μ' * x .+ log(c(length(μ), κ))
+log_vmf_wo_c(x, μ, κ) = κ * μ' * x
 
 pairwisecos(x, y) = acos.(x' * y .* (1 - eps(eltype(x)) * size(x, 1) * 5)) # This is a bit of a hack to avoid the float operation to input number > 1.0 into acos
 pairwisecos(x) = pairwisecos(x, x)
@@ -72,10 +73,6 @@ end
 """
 function zparams(model::SVAE, x)
 	hidden = model.q(x)
-	if any(isnan.(hidden))
-		println("hidden: $hidden")
-		println("encoder: $(model.q[1].W) $(model.q[1].b) $(model.q[2].W) $(model.q[2].b)")
-	end
 	# return model.μzfromhidden(hidden), max.(model.κzfromhidden(hidden), 1000)
 	return model.μzfromhidden(hidden), model.κzfromhidden(hidden)
 end

@@ -109,7 +109,7 @@ end
 function loss(m::VAE{T,V},x) where {T,V<:Val{:scalarsigma}}
 	μz, σ2z, μx, σ2x = infer(m,x)
 	# println("x: $(size(x)) μx: $(size(μx)) σ2x: $(size(σ2x'))")
-	-mean(log_normal(x,μx,collect(σ2x'))) + m.β * mean(kldiv(μz,σ2z))
+	-mean(log_normal(x,μx,collect(σ2x'))) + mean(kldiv(μz,σ2z))
 end
 
 function loss(m::VAE{T,V},x) where {T,V<:Val{:unit}}
@@ -129,7 +129,7 @@ end
 function printingloss(m::VAE{T,V},x) where {T,V<:Val{:scalarsigma}}
 	μz, σ2z, μx, σ2x = infer(m,x)
 	println("loglkl: $(-mean(log_normal(x,μx,collect(σ2x')))) | KL: $(mean(kldiv(μz,σ2z)))")
-	-mean(log_normal(x,μx,collect(σ2x'))) + m.β*mean(kldiv(μz,σ2z))
+	-mean(log_normal(x,μx,collect(σ2x'))) + mean(kldiv(μz,σ2z))
 end
 
 function printingloss(m::VAE{T,V},x) where {T,V<:Val{:unit}}

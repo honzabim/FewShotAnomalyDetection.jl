@@ -15,6 +15,6 @@ include("svae.jl")
 include("svaebase.jl")
 include("svaetwocaps.jl")
 
-export SVAEbase, SVAEtwocaps, loss, wloss, pxexpectedz, pz, zparams, printing_wloss
+export SVAEbase, SVAEtwocaps, loss, wloss, pxexpectedz, pz, px, zparams, printing_wloss
 
 end

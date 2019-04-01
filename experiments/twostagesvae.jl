@@ -14,7 +14,7 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, latentDim,
 
     T = Float32
 
-    encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, latentDim * 2, numLayers, nonlinearity, "", layerType))
+    encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, latentDim * 2, numLayers + 1, nonlinearity, "linear", layerType))
     decoder = Adapt.adapt(T, FluxExtensions.layerbuilder(latentDim, hiddenDim, inputDim + 1, numLayers + 1, nonlinearity, "linear", layerType))
     outerVAE = VAE(encoder, decoder, β, :scalarsigma)
     opt = Flux.Optimise.ADAM(3e-4)
@@ -22,29 +22,33 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, latentDim,
     Flux.train!((x, y) -> loss(outerVAE, x), Flux.params(outerVAE), RandomBatches((train[1], zero(train[2])), batchSize, numBatches), opt, cb = cb)
 
     svae = SVAEtwocaps(latentDim, latentDim, latentDim, numLayers, nonlinearity, layerType, :scalarsigma, T)
+    FewShotAnomalyDetection.set_normal_μ_nonparam(svae, vcat(T(1), zeros(latentDim - 1)))
     learnRepresentation!(data, labels) = wloss(svae, data, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
     printing_learnRepresentation!(data, labels) = printing_wloss(svae, data, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
-    opt = Flux.Optimise.ADAM(3e-4)
+    opt = Flux.Optimise.ADAM(1e-5)
     cb = Flux.throttle(() -> println("$datasetName inner SVAE: $(printing_learnRepresentation!(samplez(outerVAE, train[1]), zero(train[2])))"), 5)
+    println("Before training - $datasetName inner SVAE: $(printing_learnRepresentation!(samplez(outerVAE, train[1]), zero(train[2])))")
     Flux.train!((x, y) -> learnRepresentation!(samplez(outerVAE, x), y), Flux.params(svae), RandomBatches((train[1], zero(train[2])), batchSize, numBatches), opt, cb = cb)
 
     pxv = vec(collect(.-pxexpectedz(svae, zparams(outerVAE, test[1])[1])'))
     pzs = vec(collect(.-pz(svae, zparams(outerVAE, test[1])[1])'))
+    pxis = vec(collect(.-px(svae, Flux.Tracker.data(zparams(outerVAE, test[1])[1]))'))
+    # println(pxis)
     auc_pxv = computeauc(pxv, test[2] .- 1)
     auc_pz = computeauc(pzs, test[2] .- 1)
+    auc_pxis = computeauc(pxis, test[2] .- 1)
 
-    println("AUC P(X) Vita: $auc_pxv | AUC learnt prior P(Z): $auc_pz")
+    println("AUC P(X) Vita: $auc_pxv | AUC P(X) IS: $auc_pxis AUC | learnt prior P(Z): $auc_pz")
 
     zs = zparams(svae, zparams(outerVAE, test[1])[1])[1]
     μz = mean(zs, dims = 2)
     FewShotAnomalyDetection.set_normal_μ(svae, μz)
-
     pzs = vec(collect(.-pz(svae, zparams(outerVAE, test[1])[1])'))
     auc_pz = computeauc(pzs, test[2] .- 1)
 
     println("AUC mean prior P(Z): $auc_pz")
 
-    return DataFrame(dataset = datasetName, idim = inputDim, hdim = hiddenDim, ldim = latentDim, layers = numLayers, β = β, auc_pxv = auc_pxv, auc_pz = auc_pz)
+    return DataFrame(dataset = datasetName, idim = inputDim, hdim = hiddenDim, ldim = latentDim, layers = numLayers, β = β, auc_pxv = auc_pxv, auc_pxis = auc_pxis, auc_pz = auc_pz)
 end
 
 outputFolder = mainfolder * "experiments/twostagesvae/"
