@@ -4,8 +4,9 @@ authors = ["honzabim <honzabim@gmail.com>"]
 version = "0.1.0"
 
 [deps]
-ADatasets = "c8209e5e-a751-11e8-2961-e9f697b03c93"
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 DiffRules = "b552c78f-8df3-52c6-915a-8e097449b14b"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 EvalCurves = "f38dcc0d-dce9-59d8-8cbc-ed225c093724"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 FluxExtensions = "76425322-8995-11e8-0106-93ec95767fb2"

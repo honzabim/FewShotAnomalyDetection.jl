@@ -29,7 +29,7 @@ struct SVAEbase <: SVAE
 end
 
 function SVAEbase(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, T = Float32)
-	encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, hiddenDim, numLayers - 1, nonlinearity, "", layerType))
+	encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, hiddenDim, numLayers, nonlinearity, "", layerType))
     decoder = Adapt.adapt(T, FluxExtensions.layerbuilder(latentDim, hiddenDim, inputDim, numLayers + 1, nonlinearity, "linear", layerType))
 	return SVAEbase(encoder, decoder, hiddenDim, latentDim, T)
 end
