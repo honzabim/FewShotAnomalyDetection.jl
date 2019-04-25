@@ -98,12 +98,13 @@ function findInverse(func, invsize, target, precision, learningrate, maxiter)
 	i = 1
 	newx = param(rand(Float64, invsize))
 	last = newx .+ 1
-	opt = ADAM(Flux.params(newx), learningrate)
+	opt = ADAM(learningrate)
 	while (loss(newx) > precision) & (i < maxiter)
 		last = newx
 		l = loss(newx)
 		Flux.Tracker.back!(l)
-		opt()
+		Δ = Flux.Optimise.apply!(opt, newx.data, newx.grad)
+        newx.data .-= Δ
 		i += 1
 	end
 	return newx

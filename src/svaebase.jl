@@ -57,7 +57,7 @@ function wloss(m::SVAEbase, x, β, d)
 	return Flux.mse(x, xgivenz) + β * Ω
 end
 
-function mem_wloss(svae::SVAE, mem::KNNmemory, x, y, β, d, α)
+function mem_wloss(svae::SVAEbase, mem::KNNmemory, x, y, β, d, α)
 	(μz, κz) = zparams(svae, x)
 	z = samplez(svae, μz, κz)
 	xgivenz = svae.g(z)

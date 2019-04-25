@@ -9,19 +9,19 @@ latentDim = 3
 numLayers = 3
 nonlinearity = "relu"
 layerType = "Dense"
-β = 0.1
-α = 0.1
-loss_α = 0.1
+β = 0.1 # ratio between reconstruction error and the distance between p(z) and q(z)
+α = 0.1 # threshold in the memory that does not matter to us at the moment!
+loss_α = 0.1 # importance ratio between anomalies and normal data in mem_loss
 memorySize = 256
 k = 256
 labelCount = 1
 
 
 batchSize = 100
-numBatches = 10000
+numBatches = 1000
 
 dataset = "breast-cancer-wisconsin" # name of the UCI dataset. You can find the names in the e.g. in the LODA paper http://agents.fel.cvut.cz/stegodata/pdfs/Pev15-Loda.pdf - last page
-dataset = "statlog-vehicle"
+# dataset = "statlog-vehicle"
 
 data, normal_labels, anomaly_labels = UCI.get_umap_data(dataset)
 # This method iterates over all subdataset in a multiclass dataset or it only runs once for a single class dataset
@@ -52,7 +52,7 @@ trainRepresentation(data) = wloss(svae, data, β, (x, y) -> FewShotAnomalyDetect
 # inserts the data into the memory
 remember(data, labels) = trainQuery!(mem, data, labels)
 # Expects anomalies in the data with correct label (some of them
-trainWithAnomalies(data, labels) = mem_wloss(svae, mem, data, labels, β, (x, y) -> mmd_imq(x, y, 1), loss_α)
+trainWithAnomalies(data, labels) = FewShotAnomalyDetection.mem_wloss(svae, mem, data, labels, β, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1), loss_α)
 
 # Unsupervised learning
 opt = Flux.Optimise.ADAM(1e-5)
@@ -68,6 +68,6 @@ remember(test[1][:, 230:end], test[2][230:end]) # we don't have anomalies in tra
 numBatches = 1000 # it will take a looong time
 
 # learn with labels
-cb = Flux.throttle(() -> println("SVAE mem loss: $(trainWithAnomalies(test[1]))"), 5)
+cb = Flux.throttle(() -> println("SVAE mem loss: $(trainWithAnomalies(test[1], test[2]))"), 60)
 # there is a hack with RandomBatches because so far I can't manage to get them to work without the tuple - I have to find a different sampling iterator
-Flux.train!((x) -> trainWithAnomalies(getobs(x)), Flux.params(svae), RandomBatches((test[1], test[2]), size = batchSize, count = numBatches), opt, cb = cb)
+Flux.train!(trainWithAnomalies, Flux.params(svae), RandomBatches((test[1], test[2]), size = batchSize, count = numBatches), opt, cb = cb)
