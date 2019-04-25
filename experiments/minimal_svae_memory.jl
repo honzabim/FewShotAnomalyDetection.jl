@@ -63,9 +63,11 @@ println("Train err: $(trainRepresentation(train[1])) vs test error: $(trainRepre
 
 # Adding stuff into the memory
 remember(train[1], train[2])
-remember(test[1], test[2]) # we don't have anomalies in train for UCI datasets :(
+remember(test[1][:, 230:end], test[2][230:end]) # we don't have anomalies in train for UCI datasets :( and let's add just a couple so we don't have to wait so long
+
+numBatches = 1000 # it will take a looong time
 
 # learn with labels
-cb = Flux.throttle(() -> println("SVAE: $(trainWithAnomalies(test[1]))"), 5)
+cb = Flux.throttle(() -> println("SVAE mem loss: $(trainWithAnomalies(test[1]))"), 5)
 # there is a hack with RandomBatches because so far I can't manage to get them to work without the tuple - I have to find a different sampling iterator
 Flux.train!((x) -> trainWithAnomalies(getobs(x)), Flux.params(svae), RandomBatches((test[1], test[2]), size = batchSize, count = numBatches), opt, cb = cb)
