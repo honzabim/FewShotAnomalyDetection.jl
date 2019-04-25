@@ -56,3 +56,45 @@ function wloss(m::SVAEbase, x, β, d)
 	xgivenz = m.g(z)
 	return Flux.mse(x, xgivenz) + β * Ω
 end
+
+function mem_wloss(svae::SVAE, mem::KNNmemory, x, y, β, d, α)
+	(μz, κz) = zparams(svae, x)
+	z = samplez(svae, μz, κz)
+	xgivenz = svae.g(z)
+
+	repetitions = 10
+	(priorμ, priorκ) = zparams(svae, repeat(mem.M', 1, repetitions))
+	priorlabels = repeat(mem.V, repetitions)
+	priorsamples = samplez(svae, priorμ, priorκ)
+
+	loss = 0
+
+	if count(y .== 1) > 0
+		anom_ids = findall(y .== 1)
+		anom_ids = anom_ids[rand(1:length(anom_ids), length(y) * 2)]
+		μzanom = μz[:, anom_ids]
+		κzanom = κz[anom_ids]
+		zanom = samplez(svae, μzanom, collect(κzanom'))
+
+		norm_ids = findall(y .== 0)
+		norm_ids = norm_ids[rand(1:length(norm_ids), length(y) * repetitions)]
+		μznorm = μz[:, norm_ids]
+		κznorm = κz[norm_ids]
+		znorm = samplez(svae, μznorm, collect(κznorm'))
+
+		Ωnorm = d(znorm, priorsamples[:, priorlabels .== 0])
+		Ωanom = d(zanom, priorsamples[:, priorlabels .== 1])
+
+		return Flux.mse(x, xgivenz) + β * (α .* Ωnorm .+ (1 - α) .* Ωanom)
+	else
+		Ωnorm = d(z, priorsamples[:, priorlabels .== 0])
+		return Flux.mse(x, xgivenz) + β * Ωnorm
+	end
+
+	# if isnan(loss) | (loss == Inf) | (loss == -Inf)
+	# 	println("Watch out, loss is $loss")
+	# 	println("There were $(count(y .== 1)) anomalies.")
+	# end
+
+	return loss
+end

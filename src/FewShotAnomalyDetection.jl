@@ -10,6 +10,7 @@ using LinearAlgebra
 using FluxExtensions
 using EvalCurves
 
+include("KNNmemory.jl")
 include("bessel.jl")
 include("svae.jl")
 include("svaebase.jl")
