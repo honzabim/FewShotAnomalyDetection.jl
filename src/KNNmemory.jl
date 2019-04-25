@@ -105,6 +105,7 @@ function findInverse(func, invsize, target, precision, learningrate, maxiter)
 		Flux.Tracker.back!(l)
 		Δ = Flux.Optimise.apply!(opt, newx.data, newx.grad)
         newx.data .-= Δ
+		newx.grad .= 0
 		i += 1
 	end
 	return newx

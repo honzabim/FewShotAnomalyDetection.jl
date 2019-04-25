@@ -15,7 +15,8 @@ include("bessel.jl")
 include("svae.jl")
 include("svaebase.jl")
 include("svaetwocaps.jl")
+include("svae_vamp.jl")
 
-export SVAEbase, SVAEtwocaps, loss, wloss, pxexpectedz, pz, px, zparams, printing_wloss, mem_wloss
+export SVAEbase, SVAEtwocaps, SVAEvamp, loss, wloss, pxexpectedz, pz, px, zparams, printing_wloss, mem_wloss
 
 end

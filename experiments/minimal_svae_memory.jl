@@ -57,7 +57,6 @@ trainWithAnomalies(data, labels) = FewShotAnomalyDetection.mem_wloss(svae, mem, 
 # Unsupervised learning
 opt = Flux.Optimise.ADAM(1e-5)
 cb = Flux.throttle(() -> println("SVAE: $(trainRepresentation(train[1]))"), 5)
-# there is a hack with RandomBatches because so far I can't manage to get them to work without the tuple - I have to find a different sampling iterator
 Flux.train!((x) -> trainRepresentation(getobs(x)), Flux.params(svae), RandomBatches((train[1],), size = batchSize, count = numBatches), opt, cb = cb)
 println("Train err: $(trainRepresentation(train[1])) vs test error: $(trainRepresentation(test[1]))")
 
@@ -69,5 +68,4 @@ numBatches = 1000 # it will take a looong time
 
 # learn with labels
 cb = Flux.throttle(() -> println("SVAE mem loss: $(trainWithAnomalies(test[1], test[2]))"), 60)
-# there is a hack with RandomBatches because so far I can't manage to get them to work without the tuple - I have to find a different sampling iterator
 Flux.train!(trainWithAnomalies, Flux.params(svae), RandomBatches((test[1], test[2]), size = batchSize, count = numBatches), opt, cb = cb)
