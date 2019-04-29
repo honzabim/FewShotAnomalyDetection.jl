@@ -73,8 +73,8 @@ end
 """
 function zparams(model::SVAE, x)
 	hidden = model.q(x)
-	# return model.μzfromhidden(hidden), max.(model.κzfromhidden(hidden), 1000)
-	return model.μzfromhidden(hidden), model.κzfromhidden(hidden)
+	return model.μzfromhidden(hidden), max.(model.κzfromhidden(hidden), 100)
+	# return model.μzfromhidden(hidden), model.κzfromhidden(hidden)
 end
 
 """
@@ -94,7 +94,7 @@ function samplez(m::SVAE, μz, κz)
 	normal = Normal()
 	v = Adapt.adapt(eltype(Flux.Tracker.data(κz)), rand(normal, size(μz, 1) - 1, size(μz, 2)))
 	v = normalizecolumns(v)
-	z = householderrotation(vcat(ω, sqrt.(1 .- ω .^ 2) .* v), μz)
+	z = householderrotation(vcat(ω, sqrt.(1 .- ω .^ 2 .+ eps(Float32)) .* v), μz)
 	if any(isnan.(z))
 		println("z: $z")
 	end

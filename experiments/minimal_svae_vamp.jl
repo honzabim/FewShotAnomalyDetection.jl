@@ -5,15 +5,15 @@ using MLDataPattern
 
 
 hiddenDim = 32
-latentDim = 3
-numLayers = 3
-nonlinearity = "relu"
+latentDim = 2
+numLayers = 2
+nonlinearity = "tanh"
 layerType = "Dense"
 β = 0.01
-num_pseudoinputs = 50
+num_pseudoinputs = 10
 
 batchSize = 100
-numBatches = 10000
+numBatches = 15000
 
 # dataset = "breast-cancer-wisconsin" # name of the UCI dataset. You can find the names in the e.g. in the LODA paper http://agents.fel.cvut.cz/stegodata/pdfs/Pev15-Loda.pdf - last page
 # # dataset = "statlog-vehicle"
@@ -44,14 +44,39 @@ numBatches = 10000
 # println("Train err: $(learnRepresentation(train[1])) vs test error: $(learnRepresentation(test[1]))")
 
 M = 2
-N = 200
+N = 1000
 s = Float32.([30 10; 10 1])
 X = s*randn(Float32,M,N)
 
 svae = SVAEvamp(size(X, 1), hiddenDim, latentDim, numLayers, nonlinearity, layerType, num_pseudoinputs)
 learnRepresentation(data) = wloss(svae, data, β, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
-opt = Flux.Optimise.ADAM(1e-5)
-cb = Flux.throttle(() -> println("SVAE: $(learnRepresentation(train[1]))"), 5)
+opt = Flux.Optimise.ADAM(1e-4)
+cb = Flux.throttle(() -> println("SVAE: $(learnRepresentation(X))"), 10)
 # there is a hack with RandomBatches because so far I can't manage to get them to work without the tuple - I have to find a different sampling iterator
-Flux.train!((x, y) -> learnRepresentation(x), Flux.params(svae), RandomBatches((train[1], zero(train[2])), size = batchSize, count = numBatches), opt, cb = cb)
-println("Train err: $(learnRepresentation(train[1])) vs test error: $(learnRepresentation(test[1]))")
+Flux.train!(learnRepresentation, Flux.params(svae), RandomBatches((X,), size = batchSize, count = numBatches), opt, cb = cb)
+println("Train err: $(learnRepresentation(X)) vs test error: $(learnRepresentation(X))")
+
+#Plotting
+
+using Plots
+plotlyjs()
+scatter(X[1, :], X[2, :], size = [500, 500])
+mus = Flux.Tracker.data(zparams(svae, X)[1])
+scatter(mus[1, :], mus[2, :], size = [500, 500])
+xgz = Flux.Tracker.data(svae.g(mus))
+scatter(xgz[1, :], xgz[2, :], size = [500, 500])
+
+
+# one learning step
+for i in 1:1000
+@show l = learnRepresentation(X)
+Flux.Tracker.back!(l)
+for p in params(svae)
+   if any(isnan.(p.grad))
+      println("$p has gradient NaN")
+   end
+   Δ = Flux.Optimise.apply!(opt, p.data, p.grad)
+   p.data .-= Δ
+   p.grad .= 0
+end
+end
