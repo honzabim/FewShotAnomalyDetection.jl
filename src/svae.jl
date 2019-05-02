@@ -73,8 +73,8 @@ end
 """
 function zparams(model::SVAE, x)
 	hidden = model.q(x)
-	return model.μzfromhidden(hidden), max.(model.κzfromhidden(hidden), 100)
-	# return model.μzfromhidden(hidden), model.κzfromhidden(hidden)
+	# return model.μzfromhidden(hidden), max.(model.κzfromhidden(hidden), 100)
+	return model.μzfromhidden(hidden), model.κzfromhidden(hidden)
 end
 
 """

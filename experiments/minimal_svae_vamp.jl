@@ -7,13 +7,13 @@ using MLDataPattern
 hiddenDim = 32
 latentDim = 2
 numLayers = 2
-nonlinearity = "tanh"
+nonlinearity = "relu"
 layerType = "Dense"
-β = 0.01
-num_pseudoinputs = 10
+β = 0.1
+num_pseudoinputs = 1
 
 batchSize = 100
-numBatches = 15000
+numBatches = 10000
 
 # dataset = "breast-cancer-wisconsin" # name of the UCI dataset. You can find the names in the e.g. in the LODA paper http://agents.fel.cvut.cz/stegodata/pdfs/Pev15-Loda.pdf - last page
 # # dataset = "statlog-vehicle"
@@ -49,8 +49,8 @@ s = Float32.([30 10; 10 1])
 X = s*randn(Float32,M,N)
 
 svae = SVAEvamp(size(X, 1), hiddenDim, latentDim, numLayers, nonlinearity, layerType, num_pseudoinputs)
-learnRepresentation(data) = wloss(svae, data, β, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
-opt = Flux.Optimise.ADAM(1e-4)
+learnRepresentation(data) = wloss(svae, data, β, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 0.001))
+opt = Flux.Optimise.RMSProp(1e-4)
 cb = Flux.throttle(() -> println("SVAE: $(learnRepresentation(X))"), 10)
 # there is a hack with RandomBatches because so far I can't manage to get them to work without the tuple - I have to find a different sampling iterator
 Flux.train!(learnRepresentation, Flux.params(svae), RandomBatches((X,), size = batchSize, count = numBatches), opt, cb = cb)
@@ -60,11 +60,15 @@ println("Train err: $(learnRepresentation(X)) vs test error: $(learnRepresentati
 
 using Plots
 plotlyjs()
-scatter(X[1, :], X[2, :], size = [500, 500])
+scatter(X[1, :], X[2, :], size = [1000, 1000])
 mus = Flux.Tracker.data(zparams(svae, X)[1])
-scatter(mus[1, :], mus[2, :], size = [500, 500])
 xgz = Flux.Tracker.data(svae.g(mus))
-scatter(xgz[1, :], xgz[2, :], size = [500, 500])
+scatter!(xgz[1, :], xgz[2, :], size = [1000, 1000])
+
+scatter(mus[1, :], mus[2, :], size = [1000, 1000])
+zs = Flux.Tracker.data(FewShotAnomalyDetection.zfromx(svae, X))
+scatter(zs[1, :], zs[2, :], size = [1000, 1000])
+
 
 
 # one learning step

@@ -10,7 +10,7 @@ mutable struct SVAEvamp <: SVAE
 	"""
 	SVAE_vamp(q, g, hdim, zdim, T) Constructor of the S-VAE where `zdim > 3` and T determines the floating point type (default Float32)
 	"""
-	SVAEvamp(q, g, hdim::Integer, zdim::Integer, num_pseudoinputs::Integer, T = Float32) = new(q, g, zdim, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, softplus)), Flux.param(Adapt.adapt(T, normalizecolumns(randn(size(q[1].W, 2), num_pseudoinputs)))))
+	SVAEvamp(q, g, hdim::Integer, zdim::Integer, num_pseudoinputs::Integer, T = Float32) = new(q, g, zdim, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, x -> σ.(x) .* 100)), Flux.param(Adapt.adapt(T, normalizecolumns(randn(size(q[1].W, 2), num_pseudoinputs)))))
 end
 
 function SVAEvamp(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, num_pseudoinputs, T = Float32)

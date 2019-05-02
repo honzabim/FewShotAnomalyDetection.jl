@@ -25,7 +25,7 @@ struct SVAEbase <: SVAE
 	"""
 	SVAEbase(q, g, hdim, zdim, T) Constructor of the S-VAE where `zdim > 3` and T determines the floating point type (default Float32)
 	"""
-	SVAEbase(q, g, hdim::Int, zdim::Int, T = Float32) = new(q, g, zdim, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, softplus)))
+	SVAEbase(q, g, hdim::Int, zdim::Int, T = Float32) = new(q, g, zdim, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, x -> σ.(x) .* 100)))
 end
 
 function SVAEbase(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, T = Float32)

@@ -29,7 +29,7 @@ mutable struct SVAEtwocaps{V<:Val} <: SVAE
 	SVAEtwocaps(q, g, hdim, zdim, T) Constructor of the S-VAE where `zdim > 3` and T determines the floating point type (default Float32)
 	"""
 end
-SVAEtwocaps(q, g, hdim::Int, zdim::Int, μ, v::Symbol = :unit, T = Float32) = SVAEtwocaps(q, g, zdim, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, softplus)), μ, Flux.param(Adapt.adapt(T, [1.])), Val(v))
+SVAEtwocaps(q, g, hdim::Int, zdim::Int, μ, v::Symbol = :unit, T = Float32) = SVAEtwocaps(q, g, zdim, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, x -> σ.(x) .* 100)), μ, Flux.param(Adapt.adapt(T, [1.])), Val(v))
 SVAEtwocaps(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, v::Symbol = :unit, T::DataType = Float32) = SVAEtwocaps(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, Flux.param(Adapt.adapt(T, normalize(randn(latentDim)))), v, T)
 function SVAEtwocaps(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, μ::AbstractVector, v::Symbol = :unit, T = Float32)
 	encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, hiddenDim, numLayers - 1, nonlinearity, "", layerType))
