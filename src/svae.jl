@@ -35,7 +35,7 @@ c(p, κ) = κ ^ (p / 2 - 1) / ((2π) ^ (p / 2) * besseli(p / 2 - 1, κ))
 log_vmf_c(x, μ, κ) = κ * μ' * x .+ log(c(length(μ), κ))
 log_vmf_wo_c(x, μ, κ) = κ * μ' * x
 
-pairwisecos(x, y) = max(1 .- (x' * y), 0) # This is a bit of a hack to avoid the distance being negative due to float
+pairwisecos(x, y) = max.(1 .- (x' * y), 0) # This is a bit of a hack to avoid the distance being negative due to float
 pairwisecos(x) = pairwisecos(x, x)
 
 k_imq(x, y, c) = sum( c./ (c .+ pairwisecos(x, y))) / (size(x, 2) * size(y, 2))
