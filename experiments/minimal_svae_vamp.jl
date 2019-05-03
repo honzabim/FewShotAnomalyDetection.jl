@@ -2,18 +2,20 @@ using FewShotAnomalyDetection
 using UCI
 using Flux
 using MLDataPattern
+using IPMeasures
+using IPMeasures: crit_mmd2_var, crit_mxy_over_mltpl, crit_mxy_over_sum
 
 
 hiddenDim = 32
 latentDim = 2
 numLayers = 2
-nonlinearity = "relu"
+nonlinearity = "leakyrelu"
 layerType = "Dense"
 β = 0.1
-num_pseudoinputs = 1
+num_pseudoinputs = 3
 
 batchSize = 100
-numBatches = 10000
+numBatches = 1000
 
 # dataset = "breast-cancer-wisconsin" # name of the UCI dataset. You can find the names in the e.g. in the LODA paper http://agents.fel.cvut.cz/stegodata/pdfs/Pev15-Loda.pdf - last page
 # # dataset = "statlog-vehicle"
@@ -34,14 +36,6 @@ numBatches = 10000
 # # no need to have it this way but we are used to it from legacy code
 # train = (_X_tr, _y_tr)
 # test = (_X_tst, _y_tst)
-#
-# svae = SVAEvamp(size(train[1], 1), hiddenDim, latentDim, numLayers, nonlinearity, layerType, num_pseudoinputs)
-# learnRepresentation(data) = wloss(svae, data, β, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
-# opt = Flux.Optimise.ADAM(1e-5)
-# cb = Flux.throttle(() -> println("SVAE: $(learnRepresentation(train[1]))"), 5)
-# # there is a hack with RandomBatches because so far I can't manage to get them to work without the tuple - I have to find a different sampling iterator
-# Flux.train!((x, y) -> learnRepresentation(x), Flux.params(svae), RandomBatches((train[1], zero(train[2])), size = batchSize, count = numBatches), opt, cb = cb)
-# println("Train err: $(learnRepresentation(train[1])) vs test error: $(learnRepresentation(test[1]))")
 
 M = 2
 N = 1000
@@ -49,12 +43,31 @@ s = Float32.([30 10; 10 1])
 X = s*randn(Float32,M,N)
 
 svae = SVAEvamp(size(X, 1), hiddenDim, latentDim, numLayers, nonlinearity, layerType, num_pseudoinputs)
-learnRepresentation(data) = wloss(svae, data, β, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 0.001))
+
+
+
+criterion = crit_mxy_over_mltpl
+criterion = crit_mxy_over_sum
+criterion = crit_mmd2_var
+
+
+for i in 1:10
+# Find the best width of the mmd kernel
+z = FewShotAnomalyDetection.samplez(svae, zparams(svae, X)...).data
+zp = FewShotAnomalyDetection.sampleVamp(svae, size(z, 2)).data
+γs = -3:0.05:2
+cs = [criterion(IPMeasures.IMQKernel(10.0 ^ γ), z, zp, IPMeasures.pairwisecos) for γ in γs]
+
+γ = 10 ^ γs[argmax(cs)]
+println("We chose kernal size $γ")
+
+learnRepresentation(data) = wloss(svae, data, β, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, γ))
 opt = Flux.Optimise.RMSProp(1e-4)
 cb = Flux.throttle(() -> println("SVAE: $(learnRepresentation(X))"), 10)
 # there is a hack with RandomBatches because so far I can't manage to get them to work without the tuple - I have to find a different sampling iterator
 Flux.train!(learnRepresentation, Flux.params(svae), RandomBatches((X,), size = batchSize, count = numBatches), opt, cb = cb)
-println("Train err: $(learnRepresentation(X)) vs test error: $(learnRepresentation(X))")
+end
+
 
 #Plotting
 
@@ -69,7 +82,10 @@ scatter(mus[1, :], mus[2, :], size = [1000, 1000])
 zs = Flux.Tracker.data(FewShotAnomalyDetection.zfromx(svae, X))
 scatter(zs[1, :], zs[2, :], size = [1000, 1000])
 
+(μ, k) = zparams(svae, svae.pseudo_inputs)
+lkhs = FewShotAnomalyDetection.log_vmf_wo_c(mus, μ.data, 1)
 
+scatter(mus[1, :], mus[2, :], zcolor = vec(lkhs), size = [1000, 1000])
 
 # one learning step
 for i in 1:1000
