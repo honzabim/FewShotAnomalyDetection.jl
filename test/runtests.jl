@@ -2,7 +2,7 @@ using FewShotAnomalyDetection
 using Pkg
 
 if in("CuArrays",keys(Pkg.installed()))
-    include("gpu.jl")
+    include("test/gpu.jl")
 else
     println("CuArrays aren't present")
 end

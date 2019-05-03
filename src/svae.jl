@@ -1,6 +1,6 @@
 abstract type SVAE end
 
-normalizecolumns(m) = m ./ sqrt.(sum(m .^ 2, dims = 1) .+ eps(eltype(Flux.Tracker.data(m))))
+normalizecolumns(m::AbstractArray{T, 2}) where {T} = m ./ sqrt.(sum(m .^ 2, dims = 1) .+ eps(T))
 
 """
 	vmfentropy(m, κ)

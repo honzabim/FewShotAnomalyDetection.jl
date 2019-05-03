@@ -3,7 +3,7 @@ This module implements a memory, according to https://arxiv.org/abs/1703.03129,
 that can be used as the last layer in a NN in the Flux framework.
 """
 
-export KNNmemory, query, trainQuery!, augmentModelWithMemory
+export KNNmemory, query, trainQuery!
 
 """
     KNNmemory{T}
