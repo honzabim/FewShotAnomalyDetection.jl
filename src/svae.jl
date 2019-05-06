@@ -1,6 +1,9 @@
 abstract type SVAE end
 
-normalizecolumns(m::AbstractArray{T, 2}) where {T} = m ./ sqrt.(sum(m .^ 2, dims = 1) .+ eps(T))
+normalizecolumns(m::AbstractArray{T, 2}) where {T<:Number} = m ./ sqrt.(sum(m .^ 2, dims = 1) .+ eps(T))
+function normalizecolumns!(m::AbstractArray{T, 2}) where {T<:Number}
+	m .= normalizecolumns(m)
+end
 
 """
 	vmfentropy(m, κ)
@@ -95,9 +98,6 @@ function samplez(m::SVAE, μz, κz)
 	v = Adapt.adapt(eltype(Flux.Tracker.data(κz)), rand(normal, size(μz, 1) - 1, size(μz, 2)))
 	v = normalizecolumns(v)
 	z = householderrotation(vcat(ω, sqrt.(1 .- ω .^ 2 .+ eps(Float32)) .* v), μz)
-	if any(isnan.(z))
-		println("z: $z")
-	end
 	return z
 end
 
@@ -115,9 +115,6 @@ function householderrotation(zprime, μ)
 end
 
 function sampleω(model::SVAE, κ)
-	if any(isnan.(κ))
-		println("κ: $κ")
-	end
 	m = model.zdim
 	c = @. sqrt(4κ ^ 2 + (m - 1) ^ 2)
 	b = @. (-2κ + c) / (m - 1)

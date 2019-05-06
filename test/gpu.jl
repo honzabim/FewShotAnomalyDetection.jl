@@ -13,7 +13,7 @@ FewShotAnomalyDetection.normalizecolumns(b)
 c = Array(a)
 FewShotAnomalyDetection.normalizecolumns(c)
 
-a = CuArray(randn(Float32, 10000, 10000))
+a = CuArray(randn(Float32, 1000, 1000))
 b = param(a)
 c = Array(a)
 
