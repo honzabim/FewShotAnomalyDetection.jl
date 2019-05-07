@@ -36,3 +36,23 @@ function wloss(m::SVAEvamp, x, β, d)
 	xgivenz = m.g(z)
 	return Flux.mse(x, xgivenz) + β * Ω
 end
+
+function pz(m::SVAEvamp, x)
+	if size(x, 2) > 1
+		xs = [x[:, i] for i in 1:size(x, 2)]
+		return map(x -> pz_singleinstance(m, x), xs)
+	else
+		return pz_singleinstance(m, x)
+	end
+end
+
+function pz_singleinstance(m::SVAEvamp, x)
+	@assert size(x, 2) == 1
+	μz = zparams(m, x)[1].data
+	pseudoz = zparams(m, m.pseudo_inputs)[1].data
+	p = 0
+	for i in 1:size(m.pseudo_inputs, 2)
+		p += exp.(log_vmf_wo_c(μz, pseudoz[:, i], 1))
+	end
+	p /= size(m.pseudo_inputs, 2)
+end

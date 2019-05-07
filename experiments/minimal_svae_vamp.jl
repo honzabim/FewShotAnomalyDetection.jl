@@ -78,14 +78,37 @@ mus = Flux.Tracker.data(zparams(svae, X)[1])
 xgz = Flux.Tracker.data(svae.g(mus))
 scatter!(xgz[1, :], xgz[2, :], size = [1000, 1000])
 
-scatter(mus[1, :], mus[2, :], size = [1000, 1000])
+scatter(mus[1, :], mus[2, :], size = [500, 500])
 zs = Flux.Tracker.data(FewShotAnomalyDetection.zfromx(svae, X))
-scatter(zs[1, :], zs[2, :], size = [1000, 1000])
+scatter(zs[1, :], zs[2, :], size = [500, 500])
 
 (μ, k) = zparams(svae, svae.pseudo_inputs)
 lkhs = FewShotAnomalyDetection.log_vmf_wo_c(mus, μ.data, 1)
 
 scatter(mus[1, :], mus[2, :], zcolor = vec(lkhs), size = [1000, 1000])
+
+xs = minimum(X[1, :]):1:maximum(X[1, :])
+ys = minimum(X[2, :]):1:maximum(X[2, :])
+
+score = (x, y) -> FewShotAnomalyDetection.as_jacobian(svae, [x, y])
+fillc = true
+nlevels = 20
+csvae = contour(xs, ys, score, fill = fillc, levels = nlevels, title = "Jacobian score")
+scatter!(csvae, X[1, :], X[2, :], alpha = 0.5)
+
+score = (x, y) -> FewShotAnomalyDetection.pxexpectedz(svae, [x, y])[1]
+csvae = contour(xs, ys, score, fill = fillc, levels = nlevels, title = "P(X) Vita")
+scatter!(csvae, X[1, :], X[2, :], alpha = 0.5)
+
+score = (x, y) -> log(FewShotAnomalyDetection.pz(svae, [x, y])[1])
+csvae = contour(xs, ys, score, fill = fillc, levels = nlevels, title = "P(z)")
+scatter!(csvae, X[1, :], X[2, :], alpha = 0.5)
+
+score = (x, y) -> log(FewShotAnomalyDetection.pz(svae, [x, y])[1]) + FewShotAnomalyDetection.pxexpectedz(svae, [x, y])[1]
+csvae = contour(xs, ys, score, fill = fillc, levels = nlevels, title = "P(z)")
+scatter!(csvae, X[1, :], X[2, :], alpha = 0.5)
+
+
 
 # one learning step
 for i in 1:1000
