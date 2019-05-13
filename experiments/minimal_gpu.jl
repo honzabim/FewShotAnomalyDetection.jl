@@ -48,7 +48,6 @@ svae = SVAEbase(size(td, 1), hiddenDim, latentDim, numLayers, nonlinearity, laye
 learnRepresentation(data) = wloss(svae, data, β, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
 opt = Flux.Optimise.ADAM(1e-4)
 cb = Flux.throttle(() -> println("SVAE: $(learnRepresentation(td))"), 5)
-# there is a hack with RandomBatches because so far I can't manage to get them to work without the tuple - I have to find a different sampling iterator
-Flux.train!(learnRepresentation, Flux.params(svae), RandomBatches((td, )), size = batchSize, count = numBatches), opt, cb = cb)
+Flux.train!(learnRepresentation, Flux.params(svae), RandomBatches((td, ), size = batchSize, count = numBatches), opt, cb = cb)
 println("Train err: $(learnRepresentation(train[1])) vs test error: $(learnRepresentation(test[1]))")
 

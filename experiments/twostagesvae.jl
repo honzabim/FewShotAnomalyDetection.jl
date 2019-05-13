@@ -17,7 +17,7 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, latentDim,
     encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, (latentDim - 1) * 2, numLayers + 1, nonlinearity, "linear", layerType))
     decoder = Adapt.adapt(T, FluxExtensions.layerbuilder((latentDim - 1), hiddenDim, inputDim + 1, numLayers + 1, nonlinearity, "linear", layerType))
     outerVAE = VAE(encoder, decoder, β, :scalarsigma)
-    opt = Flux.Optimise.ADAM(3e-4)
+    opt = Flux.Optimise.ADAM(1e-4)
     cb = Flux.throttle(() -> println("$datasetName outer VAE: $(printingloss(outerVAE, train[1]))"), 5)
     Flux.train!((x, y) -> loss(outerVAE, x), Flux.params(outerVAE), RandomBatches((train[1], zero(train[2])), batchSize, numBatches), opt, cb = cb)
 
@@ -25,15 +25,18 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, latentDim,
     FewShotAnomalyDetection.set_normal_μ_nonparam(svae, vcat(T(1), zeros(latentDim - 1)))
     learnRepresentation!(data, labels) = wloss(svae, data, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
     printing_learnRepresentation!(data, labels) = printing_wloss(svae, data, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
-    opt = Flux.Optimise.ADAM(1e-5)
+    opt = Flux.Optimise.ADAM(1e-4)
     cb = Flux.throttle(() -> println("$datasetName inner SVAE: $(printing_learnRepresentation!(samplez(outerVAE, train[1]), zero(train[2])))"), 5)
     println("Before training - $datasetName inner SVAE: $(printing_learnRepresentation!(samplez(outerVAE, train[1]), zero(train[2])))")
     Flux.train!((x, y) -> learnRepresentation!(samplez(outerVAE, x), y), Flux.params(svae), RandomBatches((train[1], zero(train[2])), batchSize, numBatches), opt, cb = cb)
 
-    pxv = vec(collect(.-pxexpectedz(svae, zparams(outerVAE, test[1])[1])'))
-    pzs = vec(collect(.-pz(svae, zparams(outerVAE, test[1])[1])'))
-    pxis = vec(collect(.-px(svae, Flux.Tracker.data(zparams(outerVAE, test[1])[1]))'))
-    # println(pxis)
+
+    data = Flux.Tracker.data(zparams(outerVAE, test[1])[1])
+    log_pxv = vec(collect(.-log_pxexpectedz(svae, data)'))
+    log_pz = vec(collect(.-log_pz(svae, data)'))
+    log_pxis = vec(collect(.-log_px(svae, data)'))
+    log_pz_jacobian = vec(collect(.-log_pz_jacobian(svae, data)'))
+
     auc_pxv = computeauc(pxv, test[2] .- 1)
     auc_pz = computeauc(pzs, test[2] .- 1)
     auc_pxis = computeauc(pxis, test[2] .- 1)

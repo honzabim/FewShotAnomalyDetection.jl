@@ -44,18 +44,57 @@ end
 
 Flux.@treelike(SVAEtwocaps)
 
-function pz(m::SVAEtwocaps, x)
-	μz, _ = zparams(m, x)
-	return log_vmf_c(Flux.Tracker.data(μz), Flux.Tracker.data(.-m.priorμ), Flux.Tracker.data(m.priorκ[1]))
+export closestz, manifoldz
+
+function closestz(m::SVAEtwocaps, x, steps = 100)
+	z = param(Flux.data(zparams(m, x)[1]))
+	ps = Flux.Tracker.Params([z])
+	opt = ADAM()
+	_lkl(model, x, z) = mean(log_pxexpectedz(model, x, z) .- log_pz_from_z(model, z))
+	li = Flux.data(_lkl(m, x, z))
+	Flux.train!((i) -> -_lkl(m, x, z), ps, 1:steps, opt)
+	le = Flux.data(_lkl(m, x, z))
+	println("initial = ",li, " final = ",le)
+	Flux.data(z)
+end
+	
+function manifoldz(m::SVAEtwocaps, x, steps = 100)
+	z = param(Flux.data(zparams(m, x)[1]))
+	ps = Flux.Tracker.Params([z])
+	opt = ADAM()
+	li = Flux.data(mean(log_pxexpectedz(m, x, z)))
+	Flux.train!((i) -> -mean(log_pxexpectedz(m, x, z)), ps, 1:steps, opt)
+	le = Flux.data(mean(log_pxexpectedz(m, x, z)))
+	println("initial = ",li, " final = ",le)
+	Flux.data(z)
 end
 
-function px(m::SVAEtwocaps{V}, x::Matrix, k::Int = 100) where {V <: Val{:scalarsigma}}
+function log_pxexpectedz(m::SVAEtwocaps{V}, x) where {V <: Val{:scalarsigma}}
+	xgivenz = m.g(zparams(m, x)[1])[1:end - 1, :]
+	Flux.Tracker.data(log_normal(x, xgivenz, collect(softplus.(xgivenz[end, :])')))
+end
+
+function log_pxexpectedz(m::SVAEtwocaps{V}, x, z) where {V <: Val{:scalarsigma}}
+	xgivenz = m.g(z)[1:end - 1, :]
+	Flux.Tracker.data(log_normal(x, xgivenz, collect(softplus.(xgivenz[end, :])')))
+end
+
+function log_pz(m::SVAEtwocaps, x)
+	μz, _ = zparams(m, x)
+	return log_vmf_c(Flux.Tracker.data(μz), Flux.Tracker.data(m.priorμ), Flux.Tracker.data(m.priorκ[1]))
+end
+
+log_pz_from_z(m::SVAEtwocaps, z) = log_vmf_c(Flux.Tracker.data(z), Flux.Tracker.data(m.priorμ), Flux.Tracker.data(m.priorκ[1]))
+
+pz(m::SVAEtwocaps, x) = exp.(log_pz(m, x))
+
+function log_px(m::SVAEtwocaps{V}, x::Matrix, k::Int = 100) where {V <: Val{:scalarsigma}}
 	println(size(x))
 	x = [x[:, i] for i in 1:size(x, 2)]
-	return map(a -> px(m, a, k), x)
+	return map(a -> log_px(m, a, k), x)
 end
 
-function px(m::SVAEtwocaps{V}, x::Vector, k::Int = 100) where {V <: Val{:scalarsigma}}
+function log_px(m::SVAEtwocaps{V}, x::Vector, k::Int = 100) where {V <: Val{:scalarsigma}}
 	μz, κz = zparams(m, x)
 	# println("μz: $μz")
 	# println("κz: $κz")
@@ -103,6 +142,18 @@ function wloss(m::SVAEtwocaps{V}, x, β, d) where {V <: Val{:unit}}
 	return Flux.mse(x, xgivenz) + β * Ω
 end
 
+function printing_wloss(m::SVAEtwocaps{V}, x, β, d) where {V <: Val{:unit}}
+	(μz, κz) = zparams(m, x)
+	z = samplez(m, μz, κz)
+	# zp = samplehsuniform(size(z))
+	prior = samplez(m, ones(size(μz)) .* normalizecolumns(m.priorμ), ones(size(κz)) .* m.priorκ)
+	Ω = d(z, prior)
+	xgivenz = m.g(z)
+	re = Flux.mse(x, xgivenz)
+	println("loglkl: $re | Wass-dist: $β x $Ω")
+	return re + β * Ω
+end
+
 function wloss(m::SVAEtwocaps{V}, x, d) where {V <: Val{:scalarsigma}}
 	(μz, κz) = zparams(m, x)
 	z = samplez(m, μz, κz)
@@ -126,12 +177,6 @@ function printing_wloss(m::SVAEtwocaps{V}, x, d) where {V <: Val{:scalarsigma}}
 	return re + Ω
 	# return Flux.mse(x, xgivenz[1:end - 1, :]) + β * Ω
 end
-
-function log_pxexpectedz(m::SVAEtwocaps{V}, x) where {V <: Val{:scalarsigma}}
-	xgivenz = m.g(zparams(m, x)[1])[1:end - 1, :]
-	Flux.Tracker.data(log_normal(xgivenz, x))
-end
-
 
 function wloss_semi_supervised(m::SVAEtwocaps{V}, x, y, β, d, α) where {V <: Val{:unit}}
 	(μz, κz) = zparams(m, x)

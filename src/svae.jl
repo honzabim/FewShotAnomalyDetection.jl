@@ -54,7 +54,7 @@ end
 
 function log_pxexpectedz(m::SVAE, x)
 	xgivenz = m.g(zparams(m, x)[1])
-	Flux.Tracker.data(log_normal(xgivenz, x))
+	Flux.Tracker.data(log_normal(x, xgivenz))
 end
 
 cart3dtoangular(x) = [acos(1.0 * x[3] / norm(x)), 1.0 * atan(x[2] / x[1])]
@@ -66,16 +66,16 @@ end
 
 jacobian(m::SVAE, x) = Flux.Tracker.jacobian(a -> Chain(m.q, m.μzfromhidden)(a), x)
 
-function as_jacobian(m::SVAE, x)
+function log_pz_jacobian(m::SVAE, x)
 	if size(x, 2) > 1
 		xs = [x[:, i] for i in 1:size(x, 2)]
-		return map(x -> as_jacobian_singleinstance(m, x), xs)
+		return map(x -> log_pz_jacobian_singleinstance(m, x), xs)
 	else
-		return as_jacobian_singleinstance(m, x)
+		return log_pz_jacobian_singleinstance(m, x)
 	end
 end
 
-function as_jacobian_singleinstance(m::SVAE, x)
+function log_pz_jacobian_singleinstance(m::SVAE, x)
 	@assert size(x, 2) == 1
 	s = svd(jacobian(m, x).data)
 	d = reduce(+, log.(abs.(s.S)))
