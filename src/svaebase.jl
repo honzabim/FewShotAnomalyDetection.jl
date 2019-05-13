@@ -25,10 +25,10 @@ struct SVAEbase <: SVAE
 	"""
 	SVAEbase(q, g, hdim, zdim, T) Constructor of the S-VAE where `zdim > 3` and T determines the floating point type (default Float32)
 	"""
-	SVAEbase(q, g, hdim::Int, zdim::Int, T = Float32) = new(q, g, zdim, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, x -> σ.(x) .* 100)))
 end
 
-function SVAEbase(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, T = Float32)
+SVAEbase(q, g, hdim::Int, zdim::Int, T = Float32) = SVAEbase(q, g, zdim, convert(T, huentropy(zdim)), Adapt.adapt(T, Chain(Dense(hdim, zdim), x -> normalizecolumns(x))), Adapt.adapt(T, Dense(hdim, 1, x -> σ.(x) .* 100)))
+function SVAEbase(inputDim::Int, hiddenDim::Int, latentDim::Int, numLayers::Int, nonlinearity::String, layerType::String, T = Float32)
 	encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, hiddenDim, numLayers, nonlinearity, "", layerType))
     decoder = Adapt.adapt(T, FluxExtensions.layerbuilder(latentDim, hiddenDim, inputDim, numLayers + 1, nonlinearity, "linear", layerType))
 	return SVAEbase(encoder, decoder, hiddenDim, latentDim, T)

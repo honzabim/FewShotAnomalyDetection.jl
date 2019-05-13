@@ -10,21 +10,10 @@ latentDim = 3
 numLayers = 3
 nonlinearity = "relu"
 layerType = "Dense"
-β = 0.01
+β = 0.01f0
 
 batchSize = 100
 numBatches = 10000
-
-function learn(train, test)
-	svae = SVAEtwocaps(size(train[1], 1), hiddenDim, latentDim, numLayers, nonlinearity, layerType, :unit) |> gpu
-    learnRepresentation(data) = wloss(svae, data, β, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
-	opt = Flux.Optimise.ADAM(1e-5)
-    cb = Flux.throttle(() -> println("SVAE: $(learnRepresentation(train[1]))"), 5)
-	# there is a hack with RandomBatches because so far I can't manage to get them to work without the tuple - I have to find a different sampling iterator
-    Flux.train!((x, y) -> learnRepresentation(x), Flux.params(svae), RandomBatches((train[1], zero(train[2])), size = batchSize, count = numBatches), opt, cb = cb)
-	println("Train err: $(learnRepresentation(train[1])) vs test error: $(lear
-	nRepresentation(test[1]))")
-end
 
 dataset = "breast-cancer-wisconsin" # name of the UCI dataset. You can find the names in the e.g. in the LODA paper http://agents.fel.cvut.cz/stegodata/pdfs/Pev15-Loda.pdf - last page
 # dataset = "statlog-vehicle"
@@ -46,3 +35,20 @@ _X_tst ./= maximum(_X_tst)
 train = (_X_tr, _y_tr) |> gpu
 test = (_X_tst, _y_tst) |> gpu
 # learn(train, test)
+
+td = train[1]
+tl = train[2]
+if length(train[2]) % 2 == 1
+    td = train[1][:, 1:(end -1)]
+    tl = train[2][1:(end -1)]
+end
+
+svae = SVAEbase(size(td, 1), hiddenDim, latentDim, numLayers, nonlinearity, layerType) |> gpu
+
+learnRepresentation(data) = wloss(svae, data, β, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
+opt = Flux.Optimise.ADAM(1e-4)
+cb = Flux.throttle(() -> println("SVAE: $(learnRepresentation(td))"), 5)
+# there is a hack with RandomBatches because so far I can't manage to get them to work without the tuple - I have to find a different sampling iterator
+Flux.train!(learnRepresentation, Flux.params(svae), RandomBatches((td, )), size = batchSize, count = numBatches), opt, cb = cb)
+println("Train err: $(learnRepresentation(train[1])) vs test error: $(learnRepresentation(test[1]))")
+

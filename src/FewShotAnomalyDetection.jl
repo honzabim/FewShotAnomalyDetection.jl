@@ -17,12 +17,13 @@ include("svae.jl")
 include("svaebase.jl")
 include("svaetwocaps.jl")
 include("svae_vamp.jl")
+include("svae_vamp_means.jl")
 
 if in("CuArrays",keys(Pkg.installed()))
     using CuArrays
     include("svae_gpu.jl")
 end
 
-export SVAEbase, SVAEtwocaps, SVAEvamp, loss, wloss, pxexpectedz, pz, px, zparams, printing_wloss, mem_wloss
+export SVAEbase, SVAEtwocaps, SVAEvamp, SVAEvampmeans, loss, wloss, pxexpectedz, pz, px, zparams, printing_wloss, mem_wloss
 
 end

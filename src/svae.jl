@@ -57,7 +57,14 @@ function pxexpectedz(m::SVAE, x)
 	Flux.Tracker.data(log_normal(xgivenz, x))
 end
 
-jacobian(m::SVAE, x) = Flux.Tracker.jacobian(m.g, x)
+cart3dtoangular(x) = [acos(1.0 * x[3] / norm(x)), 1.0 * atan(x[2] / x[1])]
+
+function cart2spherical(x)
+	scoords = vcat([acot(x[i] / norm(x[(i + 1):end])) for i in 1:(length(x) - 2)]...)
+	scoords = vcat(scoords, 2acot((x[end - 1] + norm(x[(end-1):end])) / x[end]))
+end
+
+jacobian(m::SVAE, x) = Flux.Tracker.jacobian(a -> Chain(m.q, m.μzfromhidden)(a), x)
 
 function as_jacobian(m::SVAE, x)
 	if size(x, 2) > 1
@@ -72,7 +79,7 @@ function as_jacobian_singleinstance(m::SVAE, x)
 	@assert size(x, 2) == 1
 	s = svd(jacobian(m, x).data)
 	d = reduce(+, log.(abs.(s.S)))
-	-d + log(pz(m, x))
+	d + log(pz(m, x))
 end
 
 """
@@ -92,6 +99,7 @@ end
 
 	Computes μ and κ from the hidden layer
 """
+
 function zparams(model::SVAE, x)
 	hidden = model.q(x)
 	# return model.μzfromhidden(hidden), max.(model.κzfromhidden(hidden), 100)

@@ -5,17 +5,27 @@ using CUDAnative
 
 GPUArray{T, N} = Union{CuArray{T, N}, TrackedArray{T, N, CuArray{T, N}}}
 
-samplehsuniform_gpu(size...) = samplehsuniform_gpu(Float32, size...)
+samplehsuniform_gpu(size::Int...) = samplehsuniform_gpu(Float32, size...)
 function samplehsuniform_gpu(T::Type, size::Int...)
     v = cuzeros(T, size...)
     randn!(v)
 	normalizecolumns!(v)
 end
 
+function wloss(m::SVAEbase, x::GPUArray{T, 2}, β::T, d) where {T}
+	(μz, κz) = zparams(m, x)
+	z = samplez(m, μz, κz)
+	zp = samplehsuniform_gpu(T, size(z)...)
+	Ω = d(z, zp)
+	xgivenz = m.g(z)
+	return Flux.mse(x, xgivenz) + β * Ω
+end
+
 function samplez(m::SVAE, μz::GPUArray{T, 2}, κz::GPUArray{T, 2}) where {T}
 	ω = sampleω(m, κz)
     v = samplehsuniform_gpu(T, size(μz, 1) - 1, size(μz, 2))
-	z = householderrotation(vcat(ω, sqrt.(1 .- ω .^ 2 .+ eps(T)) .* v), μz)
+    ω2 = 1 .- CUDAnative.pow.(ω, 2f0) .+ eps(T)
+	z = householderrotation(vcat(ω, CUDAnative.sqrt.(ω2) .* v), μz)
 	return z
 end
 
@@ -131,5 +141,35 @@ function log_beta_expression(logX, logY)
     logX -= logM
     logY -= logM
     return CUDAnative.exp(logX - CUDAnative.log(CUDAnative.exp(logX) + CUDAnative.exp(logY)))
+end
+
+function sampleω(model::SVAE, κ::GPUArray{T, N}) where {T, N}
+    m = CuArray([T(model.zdim)])
+    c2 = @. CUDAnative.pow(4κ, 2f0) + CUDAnative.pow((m - 1), 2f0)
+    c = CUDAnative.sqrt.(c2)
+	b = @. (-2κ + c) / (m - 1)
+    a = @. (m - 1 + 2κ + c) / 4
+    logm1 = CUDAnative.log.(m .- 1)
+    d = @. (4 * a * b) / (1 + b) - (m - 1) * logm1
+	ω = rejectionsampling(m[1], a, b, d, κ)
+	return ω
+end
+
+function rejectionsampling(m, a, b, d, κ::GPUArray{T, N}) where {T, N}
+    nϵ = cuzeros(T, size(a)...)
+    ϵ = cuzeros(T, size(a)...)
+    u = cuzeros(T, size(a)...)
+    # ω = cuzeros(T, size(a)...)
+    t = cuzeros(T, size(a)...)
+    mask = cufill(true, size(a)...)
+    
+    while any(mask)
+        nϵ .= rand_beta_gpu(T, (m - 1) / 2, (m - 1) / 2, size(a)...)
+        ϵ .= map((m, x, nx) -> m ? nx : x, mask, ϵ, nϵ)
+        rand!(u)
+        t = @. 2 * a * b / (1 - (1 - b) * ϵ)
+        mask = @. mask & ((m - 1) * CUDAnative.log(t) - t + d >= CUDAnative.log(u))
+	end
+	return @. (1 - (1 + b) * ϵ) / (1 - (1 - b) * ϵ)
 end
 
