@@ -14,14 +14,14 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, latentDim,
 
     T = Float32
 
-    encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, latentDim * 2, numLayers + 1, nonlinearity, "linear", layerType))
-    decoder = Adapt.adapt(T, FluxExtensions.layerbuilder(latentDim, hiddenDim, inputDim + 1, numLayers + 1, nonlinearity, "linear", layerType))
+    encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, (latentDim - 1) * 2, numLayers + 1, nonlinearity, "linear", layerType))
+    decoder = Adapt.adapt(T, FluxExtensions.layerbuilder((latentDim - 1), hiddenDim, inputDim + 1, numLayers + 1, nonlinearity, "linear", layerType))
     outerVAE = VAE(encoder, decoder, β, :scalarsigma)
     opt = Flux.Optimise.ADAM(3e-4)
     cb = Flux.throttle(() -> println("$datasetName outer VAE: $(printingloss(outerVAE, train[1]))"), 5)
     Flux.train!((x, y) -> loss(outerVAE, x), Flux.params(outerVAE), RandomBatches((train[1], zero(train[2])), batchSize, numBatches), opt, cb = cb)
 
-    svae = SVAEtwocaps(latentDim, latentDim, latentDim, numLayers, nonlinearity, layerType, :scalarsigma, T)
+    svae = SVAEtwocaps(latentDim - 1, latentDim, latentDim - 1, numLayers, nonlinearity, layerType, :scalarsigma, T)
     FewShotAnomalyDetection.set_normal_μ_nonparam(svae, vcat(T(1), zeros(latentDim - 1)))
     learnRepresentation!(data, labels) = wloss(svae, data, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))
     printing_learnRepresentation!(data, labels) = printing_wloss(svae, data, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))

@@ -127,7 +127,7 @@ function printing_wloss(m::SVAEtwocaps{V}, x, d) where {V <: Val{:scalarsigma}}
 	# return Flux.mse(x, xgivenz[1:end - 1, :]) + β * Ω
 end
 
-function pxexpectedz(m::SVAEtwocaps{V}, x) where {V <: Val{:scalarsigma}}
+function log_pxexpectedz(m::SVAEtwocaps{V}, x) where {V <: Val{:scalarsigma}}
 	xgivenz = m.g(zparams(m, x)[1])[1:end - 1, :]
 	Flux.Tracker.data(log_normal(xgivenz, x))
 end

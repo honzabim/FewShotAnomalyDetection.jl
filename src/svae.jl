@@ -52,7 +52,7 @@ function samplehsuniform(size...)
 	v = normalizecolumns(v)
 end
 
-function pxexpectedz(m::SVAE, x)
+function log_pxexpectedz(m::SVAE, x)
 	xgivenz = m.g(zparams(m, x)[1])
 	Flux.Tracker.data(log_normal(xgivenz, x))
 end
