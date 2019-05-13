@@ -82,6 +82,23 @@ function log_pz_jacobian_singleinstance(m::SVAE, x)
 	d + log(pz(m, x))
 end
 
+function log_pz_jacobian(m::SVAE, x, z)
+	if size(x, 2) > 1
+		xs = [x[:, i] for i in 1:size(x, 2)]
+		zs = [z[:, i] for i in 1:size(z, 2)]
+		return map((x, z) -> log_pz_jacobian_singleinstance(m, x, z), xs, zs)
+	else
+		return log_pz_jacobian_singleinstance(m, x, z)
+	end
+end
+
+function log_pz_jacobian_singleinstance(m::SVAE, x, z)
+	@assert size(x, 2) == 1
+	s = svd(jacobian(m, x).data)
+	d = reduce(+, log.(abs.(s.S)))
+	d + log(pz_from_z(m, z))
+end
+
 """
 	infer(m::SVAE, x)
 

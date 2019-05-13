@@ -44,7 +44,7 @@ end
 
 Flux.@treelike(SVAEtwocaps)
 
-export closestz, manifoldz
+export closestz, manifoldz, log_pz_from_z, pz_from_z
 
 function closestz(m::SVAEtwocaps, x, steps = 100)
 	z = param(Flux.data(zparams(m, x)[1]))
@@ -71,12 +71,12 @@ end
 
 function log_pxexpectedz(m::SVAEtwocaps{V}, x) where {V <: Val{:scalarsigma}}
 	xgivenz = m.g(zparams(m, x)[1])[1:end - 1, :]
-	Flux.Tracker.data(log_normal(x, xgivenz, collect(softplus.(xgivenz[end, :])')))
+	log_normal(x, xgivenz, collect(softplus.(xgivenz[end, :])'))
 end
 
 function log_pxexpectedz(m::SVAEtwocaps{V}, x, z) where {V <: Val{:scalarsigma}}
 	xgivenz = m.g(z)[1:end - 1, :]
-	Flux.Tracker.data(log_normal(x, xgivenz, collect(softplus.(xgivenz[end, :])')))
+	log_normal(x, xgivenz, collect(softplus.(xgivenz[end, :])'))
 end
 
 function log_pz(m::SVAEtwocaps, x)
@@ -87,9 +87,9 @@ end
 log_pz_from_z(m::SVAEtwocaps, z) = log_vmf_c(Flux.Tracker.data(z), Flux.Tracker.data(m.priorμ), Flux.Tracker.data(m.priorκ[1]))
 
 pz(m::SVAEtwocaps, x) = exp.(log_pz(m, x))
+pz_from_z(m::SVAEtwocaps, z) = exp.(log_pz_from_z(m, z))
 
 function log_px(m::SVAEtwocaps{V}, x::Matrix, k::Int = 100) where {V <: Val{:scalarsigma}}
-	println(size(x))
 	x = [x[:, i] for i in 1:size(x, 2)]
 	return map(a -> log_px(m, a, k), x)
 end
@@ -157,25 +157,21 @@ end
 function wloss(m::SVAEtwocaps{V}, x, d) where {V <: Val{:scalarsigma}}
 	(μz, κz) = zparams(m, x)
 	z = samplez(m, μz, κz)
-	# zp = samplehsuniform(size(z))
 	prior = samplez(m, ones(size(μz)) .* normalizecolumns(m.priorμ), ones(size(κz)) .* m.priorκ)
 	Ω = d(z, prior)
 	xgivenz = m.g(z)
 	return -mean(log_normal(x, xgivenz[1:end - 1, :], collect(softplus.(xgivenz[end, :])'))) + Ω
-	# return Flux.mse(x, xgivenz[1:end - 1, :]) + β * Ω
 end
 
 function printing_wloss(m::SVAEtwocaps{V}, x, d) where {V <: Val{:scalarsigma}}
 	(μz, κz) = zparams(m, x)
 	z = samplez(m, μz, κz)
-	# zp = samplehsuniform(size(z))
 	prior = samplez(m, ones(size(μz)) .* normalizecolumns(m.priorμ), ones(size(κz)) .* m.priorκ)
 	Ω = d(z, prior)
 	xgivenz = m.g(z)
 	re = -mean(log_normal(x, xgivenz[1:end - 1, :], collect(softplus.(xgivenz[end, :])')))
 	println("loglkl: $re | Wass-dist: $Ω")
 	return re + Ω
-	# return Flux.mse(x, xgivenz[1:end - 1, :]) + β * Ω
 end
 
 function wloss_semi_supervised(m::SVAEtwocaps{V}, x, y, β, d, α) where {V <: Val{:unit}}
