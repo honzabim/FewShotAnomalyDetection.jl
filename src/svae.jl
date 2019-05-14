@@ -64,40 +64,58 @@ function cart2spherical(x)
 	scoords = vcat(scoords, 2acot((x[end - 1] + norm(x[(end-1):end])) / x[end]))
 end
 
-jacobian(m::SVAE, x) = Flux.Tracker.jacobian(a -> Chain(m.q, m.μzfromhidden)(a), x)
+jacobian_encoder(m::SVAE, x) = Flux.Tracker.jacobian(a -> Chain(m.q, m.μzfromhidden)(a), x)
 
-function log_pz_jacobian(m::SVAE, x)
+function log_pz_jacobian_encoder(m::SVAE, x)
 	if size(x, 2) > 1
 		xs = [x[:, i] for i in 1:size(x, 2)]
-		return map(x -> log_pz_jacobian_singleinstance(m, x), xs)
+		return map(x -> log_pz_jacobian_encoder_singleinstance(m, x), xs)
 	else
-		return log_pz_jacobian_singleinstance(m, x)
+		return log_pz_jacobian_encoder_singleinstance(m, x)
 	end
 end
 
-function log_pz_jacobian_singleinstance(m::SVAE, x)
+function log_pz_jacobian_encoder_singleinstance(m::SVAE, x)
 	@assert size(x, 2) == 1
-	s = svd(jacobian(m, x).data)
+	s = svd(jacobian_encoder(m, x).data)
 	d = reduce(+, log.(abs.(s.S)))
-	d + log(pz(m, x))
+	d + log_pz(m, x)
 end
 
-function log_pz_jacobian(m::SVAE, x, z)
-	if size(x, 2) > 1
-		xs = [x[:, i] for i in 1:size(x, 2)]
+jacobian_decoder(m::SVAE, z) = Flux.Tracker.jacobian(a -> m.g(a), z)
+
+function log_pz_jacobian_decoder(m::SVAE, z)
+	if size(z, 2) > 1
 		zs = [z[:, i] for i in 1:size(z, 2)]
-		return map((x, z) -> log_pz_jacobian_singleinstance(m, x, z), xs, zs)
+		return map(z -> log_pz_jacobian_decoder_singleinstance(m, z), zs)
 	else
-		return log_pz_jacobian_singleinstance(m, x, z)
+		return log_pz_jacobian_decoder_singleinstance(m, z)
 	end
 end
 
-function log_pz_jacobian_singleinstance(m::SVAE, x, z)
-	@assert size(x, 2) == 1
-	s = svd(jacobian(m, x).data)
+function log_pz_jacobian_decoder_singleinstance(m::SVAE, z)
+	@assert size(z, 2) == 1
+	s = svd(jacobian_decoder(m, z).data)
 	d = reduce(+, log.(abs.(s.S)))
-	d + log(pz_from_z(m, z))
+	-d + log_pz_from_z(m, z)
 end
+
+# function log_pz_jacobian(m::SVAE, x, z)
+# 	if size(x, 2) > 1
+# 		xs = [x[:, i] for i in 1:size(x, 2)]
+# 		zs = [z[:, i] for i in 1:size(z, 2)]
+# 		return map((x, z) -> log_pz_jacobian_singleinstance(m, x, z), xs, zs)
+# 	else
+# 		return log_pz_jacobian_singleinstance(m, x, z)
+# 	end
+# end
+
+# function log_pz_jacobian_singleinstance(m::SVAE, x, z)
+# 	@assert size(x, 2) == 1
+# 	s = svd(jacobian(m, x).data)
+# 	d = reduce(+, log.(abs.(s.S)))
+# 	d + log(pz_from_z(m, z))
+# end
 
 """
 	infer(m::SVAE, x)

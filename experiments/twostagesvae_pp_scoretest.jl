@@ -5,26 +5,26 @@ using Statistics
 
 include("experiments/experimentalutils.jl")
 
-resultsFolder = mainfolder * "experiments/twostagesvae_scoretest_wide/"
+resultsFolder = mainfolder * "experiments/twostagesvae_scoretest_new/"
 files = readdir(resultsFolder)
 
 results = []
 for f in files
     if isfile(resultsFolder * f) && occursin(".csv", f)
-        push!(results, CSV.read(resultsFolder * f))
+        push!(results, DataFrame(CSV.read(resultsFolder * f)[1, :]))
     end
 end
 results = vcat(results...)
 
 using Plots
 using StatsPlots
-plotly()
+plotlyjs()
 
 # for n in names(results)[7:end]
 #     @df results boxplot(:dataset, n, size = [700, 700])
 # end
 pp = []
-for n in names(results)[7:12]
+for n in names(results)[7:13]
     i = 1
     p = plot(title = String(n))
     for d in unique(results[:dataset])
@@ -34,7 +34,9 @@ for n in names(results)[7:12]
     end
     push!(pp, p)
 end
-plot(pp..., layout = (2,3), size = (1200, 1000))
+push!(pp, plot())
+plot(pp..., layout = (2,4), size = (1200, 1000))
+
 
 # aggres = []
 # for d in unique(results[:dataset])

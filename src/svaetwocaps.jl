@@ -69,6 +69,8 @@ function manifoldz(m::SVAEtwocaps, x, steps = 100)
 	Flux.data(z)
 end
 
+jacobian_decoder(m::SVAEtwocaps{V}, z) where {V <: Val{:scalarsigma}} = Flux.Tracker.jacobian(a -> m.g(a)[1:end-1], z) 
+
 function log_pxexpectedz(m::SVAEtwocaps{V}, x) where {V <: Val{:scalarsigma}}
 	xgivenz = m.g(zparams(m, x)[1])[1:end - 1, :]
 	log_normal(x, xgivenz, collect(softplus.(xgivenz[end, :])'))

@@ -1,5 +1,8 @@
 using Random
 using Statistics
+using LinearAlgebra
+using Flux
+using StatsBase
 
 """
 		hsplitsoftp(x, ϵ = 1f-5)
@@ -138,22 +141,53 @@ function printingloss(m::VAE{T,V},x) where {T,V<:Val{:unit}}
 	-mean(log_normal(x,μx)) + m.β*mean(kldiv(μz,σ2z))
 end
 
-# """
-# 		function px(m::T,x,r::Int = 100) where {T<:Union{VAE,IPMAE}}
-#
-# 		probability of sample x given the model estimated from `r` samples
-# """
-# function px(m::T,x,k::Int = 100, σ = 1.0) where {T<:VAE}
-# 	xx = FluxExtensions.scatter(x, k)
-# 	μz, σ2z = hsplitsoftp(m.q(xx))
-# 	z = gaussiansample(μz,σ2z)
-# 	μx  = m.g(z)
-#
-# 	lkl = log_normal(xx, μx, σ)
-# 	gather(logsumexp,lkl,k) ./ ((k>1) ? log(k) : 1)
-# end
 
-function pxvita(m::T,x, σ = 1.0) where {T<:VAE}
+function log_pxexpectedz(m::VAE{T,V},x, σ = 1.0) where {T, V<:Val{:unit}}
 	μz, σ2z = hsplitsoftp(m.q(x))
 	log_normal(x,m.g(μz),σ)
+end
+
+function log_pxexpectedz(m::VAE{T,V}, x) where {T, V<:Val{:scalarsigma}}
+	μz, σ2z = hsplitsoftp(m.q(x))
+	μx, σ2x = hsplit1softp(m.g(μz))
+	log_normal(x,μx,collect(σ2x'))
+end
+
+function log_pxexpectedz(m::VAE{T,V}, x, z) where {T, V<:Val{:scalarsigma}}
+	μx, σ2x = hsplit1softp(m.g(z))
+	log_normal(x,μx,collect(σ2x'))
+end
+
+jacobian_encoder(m::VAE, x) = Flux.Tracker.jacobian(a -> vec(hsplitsoftp(m.q(a))[1]), x)
+jacobian_decoder(m::VAE{T,V}, z) where {T, V<:Val{:scalarsigma}} = Flux.Tracker.jacobian(a -> vec(hsplit1softp(m.g(a))[1]), z) 
+jacobian_decoder(m::VAE{T,V}, z) where {T, V<:Val{:unit}} = Flux.Tracker.jacobian(a -> m.g(a), z) 
+
+function log_det_jacobian_encoder(m::VAE, x)
+	if size(x, 2) > 1
+		xs = [x[:, i] for i in 1:size(x, 2)]
+		return map(x -> log_det_jacobian_encoder_singleinstance(m, x), xs)
+	else
+		return log_det_jacobian_encoder_singleinstance(m, x)
+	end
+end
+
+function log_det_jacobian_encoder_singleinstance(m::VAE, x)
+	@assert size(x, 2) == 1
+	s = svd(jacobian_encoder(m, x).data)
+	d = reduce(+, log.(abs.(s.S)))
+end
+
+function log_det_jacobian_decoder(m::VAE, z)
+	if size(z, 2) > 1
+		zs = [z[:, i] for i in 1:size(z, 2)]
+		return map(z -> log_det_jacobian_decoder_singleinstance(m, z), zs)
+	else
+		return log_det_jacobian_decoder_singleinstance(m, z)
+	end
+end
+
+function log_det_jacobian_decoder_singleinstance(m::VAE, z)
+	@assert size(z, 2) == 1
+	s = svd(jacobian_decoder(m, z).data)
+	d = reduce(+, log.(abs.(s.S)))
 end

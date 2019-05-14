@@ -31,5 +31,5 @@ decoder = Adapt.adapt(T, FluxExtensions.layerbuilder(latentDim, hiddenDim, input
 outerVAE = VAE(encoder, decoder, T(1), :scalarsigma)
 opt = Flux.Optimise.ADAM(3e-4)
 cb = Flux.throttle(() -> println("$datasetName outer VAE: $(printingloss(outerVAE, train[1]))"), 5)
-Flux.train!((x, y) -> loss(outerVAE, x), Flux.params(outerVAE), RandomBatches((train, zero(train)), batchSize, numBatches), opt, cb = cb)
+Flux.train!((z, y) -> loss(outerVAE, z), Flux.params(outerVAE), RandomBatches((train, zero(train)), batchSize, numBatches), opt, cb = cb)
 

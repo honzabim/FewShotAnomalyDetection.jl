@@ -69,7 +69,6 @@ end
 
 
 s = [700, 700]
-
 #Plotting
 
 using Plots
