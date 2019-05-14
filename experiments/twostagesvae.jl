@@ -11,7 +11,7 @@ import FewShotAnomalyDetection: loss, zparams
 include("experimentalutils.jl")
 include("vae.jl")
 
-outputFolder = mainfolder * "experiments/twostagesvae_scoretest/"
+outputFolder = mainfolder * "experiments/twostagesvae_scoretest_wide/"
 mkpath(outputFolder)
 
 function runExperiment(datasetName, train, test, inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, β, batchSize = 100, numBatches = 10000, i = 0)
@@ -72,7 +72,8 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, latentDim,
     auc_pxv_pz_mz = computeauc(log_pxv_mz .+ log_pzs_mz, test[2] .- 1)
     auc_pxv_pz_jacobian_mz = computeauc(log_pxv_mz .+ log_pzs_jacobian_mz, test[2] .- 1)
 
-    serialize(outputFolder * "twostagesvae-$datasetName-$i-model.jls", svae)
+    serialize(outputFolder * "twostagesvae-$datasetName-$i-svae.jls", svae)
+    serialize(outputFolder * "twostagesvae-$datasetName-$i-vae.jls", outerVAE)
     serialize(outputFolder * "twostagesvae-$datasetName-$i-train.jls", train)
     serialize(outputFolder * "twostagesvae-$datasetName-$i-test.jls", test)
 
@@ -83,7 +84,7 @@ end
 
 datasets = ["breast-cancer-wisconsin"]
 difficulties = ["easy"]
-batchSize = 100
+batchSize = 200
 iterations = 10000
 
 if length(ARGS) != 0
@@ -98,7 +99,7 @@ for i in 1:5
         println("$dn")
 
         evaluateOneConfig = p -> runExperiment(dn, train, test, size(train[1], 1), p..., batchSize, iterations, i)
-        results = gridsearch(evaluateOneConfig, [32], [8], [3], ["swish"], ["Dense"], [1.])
+        results = gridsearch(evaluateOneConfig, [64], [3], [3], ["swish"], ["Dense"], [1.])
 
         CSV.write(outputFolder * "twostagesvae-$dn-$i.csv", vcat(results...))
     end
