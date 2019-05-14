@@ -3,7 +3,7 @@ using CSV
 using FileIO
 using Statistics
 
-include("experimentalutils.jl")
+include("experiments/experimentalutils.jl")
 
 resultsFolder = mainfolder * "experiments/twostagesvae/"
 files = readdir(resultsFolder)
