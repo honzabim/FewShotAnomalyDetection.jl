@@ -21,7 +21,7 @@ s = SVAEtwocaps(8, 8, 8, 2, "relu", "Dense", :scalarsigma, Float32)
 FewShotAnomalyDetection.set_normal_μ_nonparam(s, vcat(Float32(1), zeros(7)))
 samplepz(n::Int) = FewShotAnomalyDetection.samplez(s, ones(8, n) .* FewShotAnomalyDetection.normalizecolumns(s.priorμ), ones(1, n) .* s.priorκ)
 
-n = 1000
+n = 10000
 z1 = samplepz(n)
 z2 = samplepz(n)
 γs = -10:0.05:2
