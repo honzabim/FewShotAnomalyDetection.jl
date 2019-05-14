@@ -57,7 +57,6 @@ z = FewShotAnomalyDetection.samplez(svae, zparams(svae, X)...).data
 zp = FewShotAnomalyDetection.sampleVamp(svae, size(z, 2)).data
 γs = -10:0.05:2
 cs = [criterion(IPMeasures.IMQKernel(10.0 ^ γ), z, zp, IPMeasures.pairwisecos) for γ in γs]
-
 γ = 10 ^ γs[argmax(cs)]
 println("We chose kernal size $γ")
 
