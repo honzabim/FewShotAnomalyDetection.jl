@@ -5,7 +5,7 @@ using Statistics
 
 include("experiments/experimentalutils.jl")
 
-resultsFolder = mainfolder * "experiments/twostagesvae_scoretest_new/"
+resultsFolder = mainfolder * "experiments/twostagesvae_scoretest_mmdpval/"
 files = readdir(resultsFolder)
 
 results = []
@@ -20,6 +20,16 @@ using Plots
 using StatsPlots
 plotlyjs()
 
+# p1 = plot()
+# for (i, n) in enumerate(names(results)[7:13])
+#     scatter!(p1, ones(4) .* i, results[n], ylim = (0,1), label = String(n))
+# end
+
+# p2 = plot()
+# for i in 1:4
+#     scatter!(p2, 1:7, [results[i, c] for c in 7:13], ylim = (0,1))
+# end
+
 # for n in names(results)[7:end]
 #     @df results boxplot(:dataset, n, size = [700, 700])
 # end
@@ -30,12 +40,13 @@ for n in names(results)[7:13]
     for d in unique(results[:dataset])
         data = vec(results[results[:dataset] .== d, n])
         scatter!(p, ones(size(data)) .* i, data, ylim = (0,1), label = d)
+        # scatter!(p, ones(size(data)) .* i, data, zcolor = vec(results[results[:dataset] .== d, 14]), ylim = (0,1), label = d)
         i += 1
     end
     push!(pp, p)
 end
 push!(pp, plot())
-plot(pp..., layout = (2,4), size = (1200, 1000))
+plot(pp..., layout = (2,4), size = (1200, 700))
 
 
 # aggres = []

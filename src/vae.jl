@@ -1,9 +1,3 @@
-using Random
-using Statistics
-using LinearAlgebra
-using Flux
-using StatsBase
-
 """
 		hsplitsoftp(x, ϵ = 1f-5)
 
@@ -13,8 +7,6 @@ using StatsBase
 """
 hsplitsoftp(x,ϵ = 1f-5) = x[1:size(x, 1) ÷ 2, :], softplus.(x[size(x, 1) ÷ 2 + 1 : 2 * (size(x, 1) ÷ 2), :] .+ ϵ)
 hsplit1softp(x,ϵ = 1f-5) = x[1:size(x, 1) - 1, :], softplus.(x[end, :] .+ ϵ)
-
-samplesoftmax(p) = mapslices(v -> StatsBase.sample(1:size(p,1),StatsBase.Weights(v)),p,1)[:]
 
 """
 		kldiv(μ,σ2)
@@ -111,13 +103,32 @@ end
 
 function loss(m::VAE{T,V},x) where {T,V<:Val{:scalarsigma}}
 	μz, σ2z, μx, σ2x = infer(m,x)
-	# println("x: $(size(x)) μx: $(size(μx)) σ2x: $(size(σ2x'))")
 	-mean(log_normal(x,μx,collect(σ2x'))) + mean(kldiv(μz,σ2z))
 end
 
 function loss(m::VAE{T,V},x) where {T,V<:Val{:unit}}
 	μz, σ2z, μx = infer(m,x)
 	-mean(log_normal(x,μx)) + m.β * mean(kldiv(μz,σ2z))
+end
+
+function wass_dist(m::VAE, x, d)
+	μz, σ2z = zparams(m, x)
+	z = gaussiansample(μz,σ2z)
+	prior = randn(size(z))
+	Ω = d(z, prior)
+	return Ω, z
+end
+
+function wloss(m::VAE{T,V}, x, d) where {T,V<:Val{:scalarsigma}}
+	Ω, z = wass_dist(m, x, d)
+	μx, σ2x = hsplit1softp(m.g(z))
+	-mean(log_normal(x, μx, collect(σ2x'))) + Ω
+end
+
+function wloss(m::VAE{T,V}, x, d) where {T,V<:Val{:unit}}
+	Ω, z = wass_dist(m, x, d)
+	μx = m.g(z)
+	-mean(log_normal(x, μx)) + Ω
 end
 
 function samplez(m::VAE{T,V}, x) where {T,V}
@@ -129,18 +140,34 @@ function zparams(m::VAE{T,V}, x) where {T,V}
 	return μz, σ2z
 end
 
-function printingloss(m::VAE{T,V},x) where {T,V<:Val{:scalarsigma}}
+function printing_loss(m::VAE{T,V},x) where {T,V<:Val{:scalarsigma}}
 	μz, σ2z, μx, σ2x = infer(m,x)
 	println("loglkl: $(-mean(log_normal(x,μx,collect(σ2x')))) | KL: $(mean(kldiv(μz,σ2z)))")
 	-mean(log_normal(x,μx,collect(σ2x'))) + mean(kldiv(μz,σ2z))
 end
 
-function printingloss(m::VAE{T,V},x) where {T,V<:Val{:unit}}
+function printing_loss(m::VAE{T,V},x) where {T,V<:Val{:unit}}
 	μz, σ2z, μx = infer(m,x)
 	println("MSE:$(-mean(log_normal(x,μx))) Flux.mse: $(Flux.mse(x, μx)) KL: $(mean(kldiv(μz,σ2z)))")
 	-mean(log_normal(x,μx)) + m.β*mean(kldiv(μz,σ2z))
 end
 
+function printing_wloss(m::VAE{T,V}, x, d) where {T,V<:Val{:scalarsigma}}
+	Ω, z = wass_dist(m, x, d)
+	μx, σ2x = hsplit1softp(m.g(z))
+	lklh = -mean(log_normal(x, μx, collect(σ2x')))
+	println("loglklh: $lklh | wass dist: $Ω")
+	lklh + Ω
+end
+
+function printing_wloss(m::VAE{T,V}, x, d) where {T,V<:Val{:unit}}
+	Ω, z = wass_dist(m, x, d)
+	lklh = -mean(log_normal(x, m.g(z)))
+	println("loglklh: $lklh | wass dist: $Ω")
+	lklh + Ω
+end
+
+log_pz(m::VAE, x) = log_normal(hsplitsoftp(m.q(x))[1])
 
 function log_pxexpectedz(m::VAE{T,V},x, σ = 1.0) where {T, V<:Val{:unit}}
 	μz, σ2z = hsplitsoftp(m.q(x))

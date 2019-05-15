@@ -21,7 +21,7 @@ s = SVAEtwocaps(8, 8, 8, 2, "relu", "Dense", :scalarsigma, Float32)
 FewShotAnomalyDetection.set_normal_μ_nonparam(s, vcat(Float32(1), zeros(7)))
 samplepz(n::Int) = FewShotAnomalyDetection.samplez(s, ones(8, n) .* FewShotAnomalyDetection.normalizecolumns(s.priorμ), ones(1, n) .* s.priorκ)
 
-n = 10000
+n = 1000
 z1 = samplepz(n)
 z2 = samplepz(n)
 γs = -10:0.05:2
@@ -63,7 +63,7 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, latentDim,
         learnRepresentation!(data, labels) = wloss(svae, data, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, gamma))
         printing_learnRepresentation!(data, labels) = printing_wloss(svae, data, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, gamma))
         cb = Flux.throttle(() -> println("$datasetName inner SVAE: $(printing_learnRepresentation!(samplez(outerVAE, train[1]), zero(train[2])))"), 5)
-        Flux.train!((x, y) -> learnRepresentation!(samplez(outerVAE, x), y), Flux.params(svae), RandomBatches((train[1], zero(train[2])), batchSize, numBatches), opt, cb = cb)
+        Flux.train!((x, y) -> learnRepresentation!(samplez(outerVAE, x), y), Flux.params(svae), RandomBatches((train[1], zero(train[2])), batchSize, 1000), opt, cb = cb)
     end
 
     ztrain = Flux.Tracker.data(FewShotAnomalyDetection.zparams(svae, zparams(outerVAE, train[1])[1])[1])
@@ -110,9 +110,6 @@ if length(ARGS) != 0
     datasets = [ARGS[1]]
     difficulties = ["easy"]
 end
-
-datasets = ["breast-cancer-wisconsin"]
-difficulties = ["easy"]
 
 for i in 1:10
     for (dn, df) in zip(datasets, difficulties)

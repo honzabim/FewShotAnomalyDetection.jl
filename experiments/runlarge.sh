@@ -1,33 +1,33 @@
-julia twostagesvae.jl abalone &
+julia twostage_vae.jl abalone &
 sleep 40
-# julia twostagesvae.jl blood-transfusion &
+# julia twostage_vae.jl blood-transfusion &
 # sleep 40
-julia twostagesvae.jl breast-tissue &
+julia twostage_vae.jl breast-tissue &
 sleep 40
-julia twostagesvae.jl haberman &
+julia twostage_vae.jl haberman &
 sleep 40
-# julia twostagesvae.jl iris &
+# julia twostage_vae.jl iris &
 # sleep 40
-julia twostagesvae.jl breast-cancer-wisconsin &
+julia twostage_vae.jl breast-cancer-wisconsin &
 sleep 40
-julia twostagesvae.jl cardiotocography &
+julia twostage_vae.jl cardiotocography &
 sleep 40
-# julia twostagesvae.jl ecoli &
+# julia twostage_vae.jl ecoli &
 # sleep 40
-# julia twostagesvae.jl glass &
+# julia twostage_vae.jl glass &
 # sleep 40
-# julia twostagesvae.jl pima-indians &
+# julia twostage_vae.jl pima-indians &
 # sleep 40
-# julia twostagesvae.jl sonar &
+# julia twostage_vae.jl sonar &
 # sleep 40
-# julia twostagesvae.jl statlog-satimage &
+# julia twostage_vae.jl statlog-satimage &
 # sleep 40
-julia twostagesvae.jl waveform-1 &
+julia twostage_vae.jl waveform-1 &
 sleep 40
-# julia twostagesvae.jl waveform-2 &
+# julia twostage_vae.jl waveform-2 &
 # sleep 40
-julia twostagesvae.jl yeast &
+julia twostage_vae.jl yeast &
 sleep 40
-julia twostagesvae.jl ionosphere &
+julia twostage_vae.jl ionosphere &
 sleep 40
-julia twostagesvae.jl wine &
+julia twostage_vae.jl wine &
