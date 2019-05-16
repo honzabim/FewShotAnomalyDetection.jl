@@ -15,7 +15,7 @@ include("experimentalutils.jl")
 outputFolder = mainfolder * "experiments/twostage_vae_scoretest/"
 mkpath(outputFolder)
 
-function null_distr_distances(dim, size, k = 1000)
+function null_distr_distances(dim, size, k = 500)
     z1 = zeros(Float32, dim, k)
     z2 = copy(z1)
     randn!(z1)
@@ -37,7 +37,7 @@ function get_gamma(m::VAE, x)
     z = Flux.Tracker.data(samplez(m, x))
     zp = randn(size(z))
     γs = -10:0.05:2
-    cs = [IPMeasures.crit_mmd2_var(IPMeasures.IMQKernel(10.0 ^ γ), z, zp, IPMeasures.pairwisel2) for γ in γs]
+    cs = [IPMeasures.crit_mmd2_var(IPMeasures.IMQKernel(10.0 ^ γ), z, zp, 1000, IPMeasures.pairwisel2) for γ in γs]
     γ = 10 ^ γs[argmax(cs)]
 end
 
@@ -47,8 +47,10 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, hiddenDim2
 
     T = Float32
 
-    null_dst, null_γ = null_distr_distances(latentDim, 1000)
+    println("$datasetName: computing null distribution distances...")
+    null_dst, null_γ = null_distr_distances(latentDim, size(train[1], 2))
 
+    println("$datasetName: creating networks...")
     outer_encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, latentDim * 2, numLayers + 1, nonlinearity, "linear", layerType))
     outer_decoder = Adapt.adapt(T, FluxExtensions.layerbuilder(latentDim, hiddenDim, inputDim + 1, numLayers + 1, nonlinearity, "linear", layerType))
     outerVAE = VAE(outer_encoder, outer_decoder, T(1), :scalarsigma)
@@ -57,7 +59,7 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, hiddenDim2
     inner_decoder = Adapt.adapt(T, FluxExtensions.layerbuilder(latentDim, hiddenDim2, latentDim + 1, numLayers + 1, nonlinearity, "linear", layerType))
     innerVAE = VAE(inner_encoder, inner_decoder, T(1), :scalarsigma)
 
-
+    println("$datasetName: training outer VAE...")
     opt = Flux.Optimise.ADAM(1e-4)
     for i in 1:(numBatches ÷ γ_step)
         γ = get_gamma(outerVAE, train[1])
@@ -68,6 +70,7 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, hiddenDim2
     z_train = Flux.Tracker.data(zparams(outerVAE, train[1])[1])
     z_test = Flux.Tracker.data(zparams(outerVAE, test[1])[1])
 
+    println("$datasetName: training inner VAE...")
     opt = Flux.Optimise.ADAM(1e-4)
     for i in 1:(numBatches ÷ γ_step)
         γ = get_gamma(innerVAE, z_train)
@@ -77,7 +80,7 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, hiddenDim2
     end
 
     # x -> z -> u -> zp -> xp
-
+    println("$datasetName: computing performance metrics...")
     u_train = Flux.Tracker.data(zparams(innerVAE, z_train)[1])
     u_test = Flux.Tracker.data(zparams(innerVAE, z_test)[1])
     u_train_dst = IPMeasures.mmd(IPMeasures.IMQKernel(null_γ), randn(size(u_train)), u_train)
@@ -120,7 +123,7 @@ end
 datasets = ["abalone"]
 difficulties = ["easy"]
 batchSize = 100
-iterations = 10000
+iterations = 1000
 γ_step = 1000
 
 if length(ARGS) != 0
@@ -128,15 +131,15 @@ if length(ARGS) != 0
     difficulties = ["easy"]
 end
 
-# datasets = ["breast-cancer-wisconsin"]
-# difficulties = ["easy"]
+datasets = ["abalone"]
+difficulties = ["easy"]
 
 for i in 1:5
     for (dn, df) in zip(datasets, difficulties)
         train, test, clusterdness = loaddata(dn, df)
 
         evaluateOneConfig = p -> runExperiment(dn, train, test, size(train[1], 1), p..., batchSize, iterations, γ_step, i)
-        results = gridsearch(evaluateOneConfig, [32, 64], [32, 16], [2, 8, 16], [3], ["swish"], ["Dense"])
+        results = gridsearch(evaluateOneConfig, [64, 32], [32, 16], [16, 8, 2], [3], ["swish"], ["Dense"])
 
         CSV.write(outputFolder * "twostagesvae-$dn-$i.csv", vcat(results...))
     end
