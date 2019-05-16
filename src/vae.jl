@@ -201,7 +201,7 @@ end
 function log_det_jacobian_encoder_singleinstance(m::VAE, x)
 	@assert size(x, 2) == 1
 	s = svd(jacobian_encoder(m, x).data)
-	d = reduce(+, log.(abs.(s.S)))
+	d = reduce(+, log.(abs.(s.S))) * 2
 end
 
 function log_det_jacobian_decoder(m::VAE, z)
@@ -216,5 +216,5 @@ end
 function log_det_jacobian_decoder_singleinstance(m::VAE, z)
 	@assert size(z, 2) == 1
 	s = svd(jacobian_decoder(m, z).data)
-	d = reduce(+, log.(abs.(s.S)))
+	d = reduce(+, log.(abs.(s.S))) * 2
 end

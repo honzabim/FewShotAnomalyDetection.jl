@@ -1,8 +1,6 @@
 # normalizecolumns(m::CuArray{T, 2}) where {T} = m ./ sqrt.(sum(m .^ 2, dims = 1)) .+ eps(T)
 # normalizecolumns(m::TrackedArray{T, 2, CuArray{T, 2}}) where {T} = m ./ sqrt.(sum(m .^ 2, dims = 1)) .+ eps(T)
 
-using CUDAnative
-
 GPUArray{T, N} = Union{CuArray{T, N}, TrackedArray{T, N, CuArray{T, N}}}
 
 samplehsuniform_gpu(size::Int...) = samplehsuniform_gpu(Float32, size...)

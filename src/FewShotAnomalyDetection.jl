@@ -21,8 +21,9 @@ include("svae_vamp.jl")
 include("svae_vamp_means.jl")
 include("vae.jl")
 
-if in("CuArrays",keys(Pkg.installed()))
+if in("CuArrays",keys(Pkg.installed())) && in("CUDAnative",keys(Pkg.installed()))
     using CuArrays
+    using CUDAnative
     include("svae_gpu.jl")
 end
 

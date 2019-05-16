@@ -78,7 +78,7 @@ end
 function log_pz_jacobian_encoder_singleinstance(m::SVAE, x)
 	@assert size(x, 2) == 1
 	s = svd(jacobian_encoder(m, x).data)
-	d = reduce(+, log.(abs.(s.S)))
+	d = reduce(+, log.(abs.(s.S))) * 2
 	d + log_pz(m, x)
 end
 
@@ -96,7 +96,7 @@ end
 function log_pz_jacobian_decoder_singleinstance(m::SVAE, z)
 	@assert size(z, 2) == 1
 	s = svd(jacobian_decoder(m, z).data)
-	d = reduce(+, log.(abs.(s.S)))
+	d = reduce(+, log.(abs.(s.S))) * 2
 	-d + log_pz_from_z(m, z)
 end
 
