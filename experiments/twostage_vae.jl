@@ -131,8 +131,8 @@ if length(ARGS) != 0
     difficulties = ["easy"]
 end
 
-datasets = ["abalone"]
-difficulties = ["easy"]
+# datasets = ["abalone"]
+# difficulties = ["easy"]
 
 for i in 1:5
     for (dn, df) in zip(datasets, difficulties)
