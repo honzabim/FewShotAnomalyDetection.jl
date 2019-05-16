@@ -34,7 +34,7 @@ function null_distr_distances(dim, size, k = 1000)
 end
 
 function get_gamma(m::VAE, x)
-    z = samplez(m, x)
+    z = Flux.Tracker.data(samplez(m, x))
     zp = randn(size(z))
     γs = -10:0.05:2
     cs = [IPMeasures.crit_mmd2_var(IPMeasures.IMQKernel(10.0 ^ γ), z, zp, IPMeasures.pairwisel2) for γ in γs]
@@ -42,8 +42,6 @@ function get_gamma(m::VAE, x)
 end
 
 mmdpval(null_dst, x) = searchsortedfirst(null_dst, x) / length(null_dst)
-
-
 
 function runExperiment(datasetName, train, test, inputDim, hiddenDim, hiddenDim2, latentDim, numLayers, nonlinearity, layerType, batchSize = 100, numBatches = 10000, γ_step = 1000, i = 0)
 
@@ -119,7 +117,7 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, hiddenDim2
                     u_test_dst = u_test_dst, meanl2_train = mean(IPMeasures.pairwisel2(train[1], xp_train)), meanl2_test = mean(IPMeasures.pairwisel2(test[1], xp_test)), medianl2_train = median(IPMeasures.pairwisel2(train[1], xp_train)), medianl2_test = median(IPMeasures.pairwisel2(test[1], xp_test)))
 end
 
-datasets = ["breast-cancer-wisconsin"]
+datasets = ["abalone"]
 difficulties = ["easy"]
 batchSize = 100
 iterations = 10000
@@ -129,6 +127,9 @@ if length(ARGS) != 0
     datasets = [ARGS[1]]
     difficulties = ["easy"]
 end
+
+# datasets = ["breast-cancer-wisconsin"]
+# difficulties = ["easy"]
 
 for i in 1:5
     for (dn, df) in zip(datasets, difficulties)
