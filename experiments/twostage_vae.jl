@@ -12,7 +12,7 @@ using Statistics
 
 include("experimentalutils.jl")
 
-outputFolder = mainfolder * "experiments/twostage_vae_scoretest/"
+outputFolder = mainfolder * "experiments/twostage_vae_corrjac/"
 mkpath(outputFolder)
 
 function null_distr_distances(dim, size, k = 500)
@@ -109,21 +109,25 @@ function runExperiment(datasetName, train, test, inputDim, hiddenDim, hiddenDim2
     auc_pxv_pz_jacobian_enc = computeauc(.-(log_pxv_test .+ log_pzs .+ log_det_jac_enc_out .+ log_det_jac_enc_inn), labels)
     auc_pxv_pz_jacobian_dec = computeauc(.-(log_pxv_test .+ log_pzs .- log_det_jac_dec_out .- log_det_jac_dec_inn), labels)
 
-    serialize(outputFolder * "twostagesvae-$datasetName-$i-$hiddenDim-$hiddenDim2-$latentDim-innvae.jls", innerVAE)
-    serialize(outputFolder * "twostagesvae-$datasetName-$i-$hiddenDim-$hiddenDim2-$latentDim-outvae.jls", outerVAE)
-    serialize(outputFolder * "twostagesvae-$datasetName-$i-$hiddenDim-$hiddenDim2-$latentDim-train.jls", train)
-    serialize(outputFolder * "twostagesvae-$datasetName-$i-$hiddenDim-$hiddenDim2-$latentDim-test.jls", test)
+    serialize(outputFolder * "twostage_vae-$datasetName-$i-$hiddenDim-$hiddenDim2-$latentDim-innvae.jls", innerVAE)
+    serialize(outputFolder * "twostage_vae-$datasetName-$i-$hiddenDim-$hiddenDim2-$latentDim-outvae.jls", outerVAE)
+    serialize(outputFolder * "twostage_vae-$datasetName-$i-$hiddenDim-$hiddenDim2-$latentDim-train.jls", train)
+    serialize(outputFolder * "twostage_vae-$datasetName-$i-$hiddenDim-$hiddenDim2-$latentDim-test.jls", test)
 
-    return DataFrame(dataset = datasetName, idim = inputDim, hdim = hiddenDim, him2 = hiddenDim2, ldim = latentDim, layers = numLayers, i = i, auc_pxv = auc_pxv, auc_pz = auc_pz, auc_pz_jacobian_enc = auc_pz_jacobian_enc,
+    df = DataFrame(dataset = datasetName, idim = inputDim, hdim = hiddenDim, hdim2 = hiddenDim2, ldim = latentDim, layers = numLayers, i = i, auc_pxv = auc_pxv, auc_pz = auc_pz, auc_pz_jacobian_enc = auc_pz_jacobian_enc,
                     auc_pz_jacobian_dec = auc_pz_jacobian_dec, auc_pxv_pz = auc_pxv_pz, auc_pxv_pz_jacobian_enc = auc_pxv_pz_jacobian_enc, auc_pxv_pz_jacobian_dec = auc_pxv_pz_jacobian_dec,
                     rec_err_train = .-mean(log_pxv_train), rec_err_test = .-mean(log_pxv_test), u_train_mmd_pval = u_train_mmd_pval, u_test_mmd_pval = u_test_mmd_pval, u_train_dst = u_train_dst,
-                    u_test_dst = u_test_dst, meanl2_train = mean(IPMeasures.pairwisel2(train[1], xp_train)), meanl2_test = mean(IPMeasures.pairwisel2(test[1], xp_test)), medianl2_train = median(IPMeasures.pairwisel2(train[1], xp_train)), medianl2_test = median(IPMeasures.pairwisel2(test[1], xp_test)))
+                    u_test_dst = u_test_dst, meanl2_train = mean(IPMeasures.pairwisel2(train[1], xp_train)), meanl2_test = mean(IPMeasures.pairwisel2(test[1], xp_test)),
+                    medianl2_train = median(IPMeasures.pairwisel2(train[1], xp_train)), medianl2_test = median(IPMeasures.pairwisel2(test[1], xp_test)))
+    
+    CSV.write(outputFolder * "twostage_vae-$datasetName-$i-$hiddenDim-$hiddenDim2-$latentDim-results.csv", df)
+    return df
 end
 
 datasets = ["abalone"]
 difficulties = ["easy"]
 batchSize = 100
-iterations = 1000
+iterations = 10000
 γ_step = 1000
 
 if length(ARGS) != 0
@@ -139,8 +143,8 @@ for i in 1:5
         train, test, clusterdness = loaddata(dn, df)
 
         evaluateOneConfig = p -> runExperiment(dn, train, test, size(train[1], 1), p..., batchSize, iterations, γ_step, i)
-        results = gridsearch(evaluateOneConfig, [64, 32], [32, 16], [16, 8, 2], [3], ["swish"], ["Dense"])
+        results = gridsearch(evaluateOneConfig, [64, 32], [32, 16], [8, 2], [3], ["swish"], ["Dense"])
 
-        CSV.write(outputFolder * "twostagesvae-$dn-$i.csv", vcat(results...))
+        CSV.write(outputFolder * "twostage_vae-$dn-$i.csv", vcat(results...))
     end
 end
