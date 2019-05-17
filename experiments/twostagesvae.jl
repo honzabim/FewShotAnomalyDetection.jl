@@ -111,7 +111,7 @@ if length(ARGS) != 0
     difficulties = ["easy"]
 end
 
-for i in 1:10
+for i in 1:5
     for (dn, df) in zip(datasets, difficulties)
         train, test, clusterdness = loaddata(dn, df)
 

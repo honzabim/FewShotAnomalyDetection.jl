@@ -5,7 +5,7 @@ using Statistics
 
 include("experiments/experimentalutils.jl")
 
-resultsFolder = mainfolder * "experiments/twostage_vae_scoretest/"
+resultsFolder = mainfolder * "experiments/twostage_svae_corrjac/"
 files = readdir(resultsFolder)
 
 results = []
@@ -39,7 +39,7 @@ for n in names(results)[8:14]
     p = plot(title = String(n))
     for d in unique(results[:dataset])
         data = vec(results[results[:dataset] .== d, n])
-        scatter!(p, ones(size(data)) .* i, data, ylim = (0,1), label = d)
+        scatter!(p, ones(size(data)) .* i, data, zcolor = vec(results[results[:dataset] .== d, :ldim]), ylim = (0,1), label = d)
         # scatter!(p, ones(size(data)) .* i, data, zcolor = vec(results[results[:dataset] .== d, 14]), ylim = (0,1), label = d)
         i += 1
     end

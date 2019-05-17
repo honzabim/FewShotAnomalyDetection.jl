@@ -28,13 +28,21 @@ function sampleVamp(m::SVAEvampmeans, n::Integer)
 end
 
 function wloss(m::SVAEvampmeans, x, β, d)
-	(μz, κz) = zparams(m, x)
-	z = μz
+	(z, _) = zparams(m, x)
 	zp = sampleVamp(m, size(z, 2))
 	#prior = samplez(m, ones(size(μz)) .* normalizecolumns(m.priorμ), ones(size(κz)) .* m.priorκ)
 	Ω = d(z, zp)
 	xgivenz = m.g(z)
 	return Flux.mse(x, xgivenz) + β * Ω
+end
+
+function decomposed_wloss(m::SVAEvampmeans, x, β, d)
+	(z, _) = zparams(m, x)
+	zp = sampleVamp(m, size(z, 2))
+	#prior = samplez(m, ones(size(μz)) .* normalizecolumns(m.priorμ), ones(size(κz)) .* m.priorκ)
+	Ω = d(z, zp)
+	xgivenz = m.g(z)
+	Flux.mse(x, xgivenz), Ω
 end
 
 function pz(m::SVAEvampmeans, x)

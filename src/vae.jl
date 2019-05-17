@@ -131,6 +131,20 @@ function wloss(m::VAE{T,V}, x, d) where {T,V<:Val{:unit}}
 	-mean(log_normal(x, μx)) + Ω
 end
 
+function rloss(m::VAE{T,V}, x) where {T,V<:Val{:scalarsigma}}
+	μz, σ2z = zparams(m, x)
+	z = gaussiansample(μz,σ2z)
+	μx, σ2x = hsplit1softp(m.g(z))
+	-mean(log_normal(x, μx, collect(σ2x')))
+end
+
+function rloss(m::VAE{T,V}, x) where {T,V<:Val{:unit}}
+	μz, σ2z = zparams(m, x)
+	z = gaussiansample(μz,σ2z)
+	μx = m.g(z)
+	-mean(log_normal(x, μx))
+end
+
 function samplez(m::VAE{T,V}, x) where {T,V}
 	z = gaussiansample(zparams(m, x)...)
 end
