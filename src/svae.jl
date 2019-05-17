@@ -36,6 +36,8 @@ c(p, κ) = κ ^ (p / 2 - 1) / ((2π) ^ (p / 2) * besseli(p / 2 - 1, κ))
 
 # log likelihood of one sample under the VMF dist with given parameters
 log_vmf_c(x, μ, κ) = κ * μ' * x .+ log(c(length(μ), κ))
+log_vmf_c(x::AbstractMatrix, μ::AbstractMatrix, κ::T) where {T <: Number} = [log_vmf_c(x[:, i], μ[:, i], κ) for i in size(x, 2)] 
+log_vmf_c(x::AbstractMatrix, μ::AbstractMatrix, κ::AbstractVector) = [log_vmf_c(x[:, i], μ[:, i], κ[i]) for i in size(x, 2)] 
 log_vmf_wo_c(x, μ, κ) = κ * μ' * x
 
 pairwisecos(x, y) = max.(1 .- (x' * y), 0) # This is a bit of a hack to avoid the distance being negative due to float

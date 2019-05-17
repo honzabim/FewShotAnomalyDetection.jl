@@ -42,7 +42,7 @@ if length(ARGS) != 0
     difficulties = ["easy"]
 end
 
-dn = "breast-cancer-wisconsin"
+dn = "haberman"
 df = "easy"
 
 for i in 1:5
@@ -54,5 +54,5 @@ for i in 1:5
 
     evaluateOneConfig = p -> runExperiment(dn, train, test, size(train[1], 1), p..., batchSize, iterations, i)
     println("Started gridsearch...")
-    gridsearch(evaluateOneConfig, [64 32], [2, 4, 8], [3], ["swish"], ["Dense"], [1, 4, 16], Float32.([0.01, 0.1, 1., 10.]), Float32.([.001, 0.01, 0.1, 1.]))
+    gridsearch(evaluateOneConfig, [64 32], [2, 3], [3], ["swish"], ["Dense"], [1, 4, 16], Float32.([0.01, 0.1, 1., 10.]), Float32.([.001, 0.01, 0.1, 1.]))
 end
