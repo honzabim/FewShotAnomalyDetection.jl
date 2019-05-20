@@ -160,7 +160,7 @@ function samplez(m::SVAE, μz, κz)
 	normal = Normal()
 	v = Adapt.adapt(eltype(Flux.Tracker.data(κz)), rand(normal, size(μz, 1) - 1, size(μz, 2)))
 	v = normalizecolumns(v)
-	z = householderrotation(vcat(ω, sqrt.(1 .- ω .^ 2 .+ eps(Float32)) .* v), μz)
+	z = householderrotation(vcat(ω, sqrt.(1 .- ω .^ 2 .+ (10 * eps(Float32))) .* v), μz)
 	return z
 end
 

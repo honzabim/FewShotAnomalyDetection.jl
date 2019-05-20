@@ -12,7 +12,7 @@ using IPMeasures
 
 include("experimentalutils.jl")
 
-outputFolder = mainfolder * "experiments/svae_goodness_of_fit_dev/"
+outputFolder = mainfolder * "experiments/svae_goodness_of_fit_dev_test/"
 mkpath(outputFolder)
 
 function runExperiment(datasetName, train, test, inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, num_pseudoinputs, β, γ, batchSize = 100, numBatches = 10000, i = 0)
@@ -42,7 +42,7 @@ if length(ARGS) != 0
     difficulties = ["easy"]
 end
 
-dn = "haberman"
+dn = "waveform-1"
 df = "easy"
 
 for i in 1:5
