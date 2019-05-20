@@ -3,7 +3,7 @@ using CSV
 using Statistics
 using FileIO
 using Plots
-plotly()
+plotlyjs()
 
 include("experimentalutils.jl")
 
@@ -34,12 +34,12 @@ results = vcat(results...)
 # end
 
 aucs = names(results)[10:17]
-fit = names(results)[[8, 9, 18, 19, 30, 31, 32]]
+fit = names(results)[[18, 19, 30, 31, 32]]
+
 for d in unique(results[:dataset])
     pp = []
     for (i, f) in enumerate(fit)
         for (j, a) in enumerate(aucs)
-            p = plot()
             p = scatter(results[results[:dataset] .== d, a], results[results[:dataset] .== d, f]) 
             if j == 1
                 ylabel!(p, String(f))
@@ -50,6 +50,7 @@ for d in unique(results[:dataset])
             push!(pp, p)
         end
     end
+
     display(plot(pp..., layout = (length(fit), length(aucs)), size = (1400, 800), legend = nothing))
 end
 
