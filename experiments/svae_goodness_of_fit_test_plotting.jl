@@ -3,7 +3,7 @@ using CSV
 using Statistics
 using FileIO
 using Plots
-plotly()
+plotlyjs()
 
 include("experimentalutils.jl")
 
