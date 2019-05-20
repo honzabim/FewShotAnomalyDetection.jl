@@ -25,11 +25,14 @@ function process_file(f)
     num_pseudoinputs = param_df[:num_pseudoinputs][1]
     β = param_df[:β][1]
     γ = param_df[:γ][1]
-    if isfile(data_folder * "$dataset-$i-$hdim-$ldim-$num_pseudoinputs-$β-$γ-metrics.csv")
+    β_str = β == 1 ? "1.0" : β == 10 ? "10.0" : "$β"
+    γ_str = γ == 1 ? "1.0" : "$γ"
+    run_name = "$dataset-$i-$hdim-$ldim-$num_pseudoinputs-$β_str-$γ_str"
+    if isfile(data_folder * "$run_name-metrics.csv")
         println("Skipping $f because it was processed already...")
         return
     end
-    svae = deserialize(data_folder * "$dataset-$i-$hdim-$ldim-$num_pseudoinputs-$β-$γ-svae.jls")
+    svae = deserialize(data_folder * "$run_name-svae.jls")
     (x_train, labels_train) = deserialize(data_folder * "$dataset-$i-train.jls")
     (x_test, labels_test) = deserialize(data_folder * "$dataset-$i-test.jls")
 
@@ -50,7 +53,7 @@ function process_file(f)
                 auc_pxv_pz_jaco_deco_train = auc_pxv_pz_jaco_deco_train, log_pxv_x_train = log_pxv_x_train, log_pxv_z_train = log_pxv_z_train, z_mmd_dst_test = z_mmd_dst_test, z_mmd_pval_test = z_mmd_pval_test, auc_pxv_x_test = auc_pxv_x_test, auc_pxv_z_test = auc_pxv_z_test,
                 auc_pz_test = auc_pz_test, auc_pz_jaco_enco_test = auc_pz_jaco_enco_test, auc_pz_jaco_deco_test = auc_pz_jaco_deco_test, auc_pxv_pz_test = auc_pxv_pz_test, auc_pxv_pz_jaco_enco_test = auc_pxv_pz_jaco_enco_test,
                 auc_pxv_pz_jaco_deco_test = auc_pxv_pz_jaco_deco_test, log_pxv_x_test = log_pxv_x_test, log_pxv_z_test = log_pxv_z_test, disc_loss_train = disc_loss_train, mean_disc_scores_z_train = mean_disc_scores_z_train, mean_disc_scores_z_test = mean_disc_scores_z_test, mean_disc_scores_z_fake = mean_disc_scores_z_fake)
-    CSV.write(data_folder * "$dataset-$i-$hdim-$ldim-$num_pseudoinputs-$β-$γ-metrics.csv", df)
+    CSV.write(data_folder * "$run_name-metrics.csv", df)
 end
 
 function train_disc(svae, x)
