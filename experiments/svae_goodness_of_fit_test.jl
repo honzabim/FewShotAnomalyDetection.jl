@@ -41,8 +41,8 @@ i = 0
 dn = "non-existing-default"
 
 if length(ARGS) != 0
-    datasets = [ARGS[1]]
-    i = parse(Int, [ARGS[2]])
+    dn = ARGS[1]
+    i = parse(Int, ARGS[2])
 end
 df = "easy"
 
