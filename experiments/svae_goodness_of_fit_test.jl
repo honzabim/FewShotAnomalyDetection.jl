@@ -54,5 +54,5 @@ serialize(outputFolder * "$dn-$i-test.jls", test)
 
 evaluateOneConfig = p -> runExperiment(dn, train, test, size(train[1], 1), p..., batchSize, iterations, i)
 println("Started gridsearch...")
-gridsearch(evaluateOneConfig, [64 32], [2, 4, 8], [3], ["swish"], ["Dense"], [1, 4, 16], Float32.([0.01, 0.1, 1., 10.]), Float32.([1., 0.1, 0.01, 0.001]))
+gridsearch(evaluateOneConfig, [64 32], [2, 4, 9], [3], ["swish"], ["Dense"], [1, 4, 16], Float32.([0.01, 0.1, 1., 10.]), Float32.([1., 0.1, 0.01, 0.001]))
 
