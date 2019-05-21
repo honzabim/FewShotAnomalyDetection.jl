@@ -9,7 +9,7 @@ include("experimentalutils.jl")
 
 data_folder = mainfolder * "experiments/svae_goodness_of_fit_dev/"
 
-files = readdir(data_folder)
+files = filter(s -> occursin("metrics.csv", s), readdir(data_folder))
 results = []
 for f in files
     if isfile(data_folder * f) && occursin("metrics.csv", f)
@@ -41,10 +41,10 @@ end
 function sel(dff)
     # I = sortperm(dff[:mean_disc_scores_z_test], rev = true)
 
-    qz = quantile(dff[:log_pxv_z_train], 0.90)
+    qz = quantile(dff[:log_pxv_z_train], 0.95)
     dff = filter(row -> row[:log_pxv_z_train]>=qz, dff)
 
-    q = quantile(dff[:z_mmd_pval_train],0.90)
+    q = quantile(dff[:z_mmd_pval_train],0.95)
     dff = filter(row -> row[:z_mmd_pval_train]>=q, dff)
 
     I = sortperm(dff[:log_pxv_x_train])
