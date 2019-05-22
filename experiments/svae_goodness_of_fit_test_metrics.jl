@@ -77,7 +77,7 @@ function train_disc(svae, x)
     return d, loss(data, labels)
 end
 
-function compute_metrics(model, x, labels)
+function compute_metrics(model, x, labels, compute_mmd = false)
     z = zparams(model, x)[1].data
     xp = model.g(z).data
     zp = zparams(model, xp)[1].data
@@ -136,7 +136,7 @@ mmdpval(null_dst, x) = searchsortedfirst(null_dst, x) / length(null_dst)
 files = filter(f -> occursin("run_params.csv", f), readdir(data_folder))
 if length(ARGS) != 0
     contains = ARGS[1]
-    files = filter(f -> occursin(contains, f), readdir(data_folder))
+    files = filter(f -> occursin(contains, f), files)
 end
 # files = readdir(data_folder)[1]
 for f in files
