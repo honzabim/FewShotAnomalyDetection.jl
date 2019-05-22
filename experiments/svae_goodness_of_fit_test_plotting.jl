@@ -9,7 +9,7 @@ include("experimentalutils.jl")
 
 data_folder = mainfolder * "experiments/svae_goodness_of_fit_dev/"
 
-files = readdir(data_folder)
+files = filter(s -> occursin("metrics.csv", s), readdir(data_folder))
 results = []
 for f in files
     if isfile(data_folder * f) && occursin("metrics.csv", f)
@@ -32,6 +32,29 @@ results = vcat(results...)
 #     push!(pp, plot())
 #     plot(pp..., layout = (2,4), size = (1200, 700))
 # end
+
+function sel_pxvita(dff)
+    u = sort(dff,:log_pxv_x_train)
+    DataFrame(u[1,[:auc_pxv_x_test]])
+end
+
+function sel(dff)
+    # I = sortperm(dff[:mean_disc_scores_z_test], rev = true)
+
+    qz = quantile(dff[:log_pxv_z_train], 0.95)
+    dff = filter(row -> row[:log_pxv_z_train]>=qz, dff)
+
+    q = quantile(dff[:z_mmd_pval_train],0.95)
+    dff = filter(row -> row[:z_mmd_pval_train]>=q, dff)
+
+    I = sortperm(dff[:log_pxv_x_train])
+    DataFrame(dff[I[1],[:auc_pxv_pz_jaco_deco_test, :z_mmd_pval_train]])
+end
+
+df = results
+df1 = by(df, [:dataset, :i], sel_pxvita)
+df2 = by(df, [:dataset, :i], sel)
+join(df1, df2, on = [:dataset, :i])
 
 aucs = names(results)[10:17]
 fit = names(results)[[18, 19, 30, 31, 32]]

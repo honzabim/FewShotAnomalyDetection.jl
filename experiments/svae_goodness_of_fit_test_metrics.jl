@@ -51,15 +51,16 @@ function process_file(f)
     mean_disc_scores_z_fake = (-1, -1)
 
     println("$f: computing metrics...")
-    z_mmd_dst_train, z_mmd_pval_train, auc_pxv_x_train, auc_pxv_z_train, auc_pz_train, auc_pz_jaco_enco_train, auc_pz_jaco_deco_train, auc_pxv_pz_train, auc_pxv_pz_jaco_enco_train, auc_pxv_pz_jaco_deco_train, log_pxv_x_train, log_pxv_z_train = compute_metrics(svae, x_train, labels_train .- 1)
-    z_mmd_dst_test, z_mmd_pval_test, auc_pxv_x_test, auc_pxv_z_test, auc_pz_test, auc_pz_jaco_enco_test, auc_pz_jaco_deco_test, auc_pxv_pz_test, auc_pxv_pz_jaco_enco_test, auc_pxv_pz_jaco_deco_test, log_pxv_x_test, log_pxv_z_test = compute_metrics(svae, x_test, labels_test .- 1)
+    z_mmd_dst_train, z_mmd_pval_train, auc_pxv_x_train, auc_pxv_z_train, auc_pz_train, auc_pz_jaco_enco_train, auc_pz_jaco_deco_train, auc_pxv_pz_train, auc_pxv_pz_jaco_enco_train, auc_pxv_pz_jaco_deco_train, log_pxv_x_train, log_pxv_z_train, log_pz_train, log_pz_jaco_enco_train, log_pz_jaco_deco_train = compute_metrics(svae, x_train, labels_train .- 1)
+    z_mmd_dst_test, z_mmd_pval_test, auc_pxv_x_test, auc_pxv_z_test, auc_pz_test, auc_pz_jaco_enco_test, auc_pz_jaco_deco_test, auc_pxv_pz_test, auc_pxv_pz_jaco_enco_test, auc_pxv_pz_jaco_deco_test, log_pxv_x_test, log_pxv_z_test, log_pz_test, log_pz_jaco_enco_test, log_pz_jaco_deco_test = compute_metrics(svae, x_test, labels_test .- 1)
     
     println("$f: saving data...")
     df = DataFrame(dataset = dataset, i = i, hdim = hdim, ldim = ldim, num_pseudoinputs = num_pseudoinputs, β = β, γ = γ, z_mmd_dst_train = z_mmd_dst_train, z_mmd_pval_train = z_mmd_pval_train, auc_pxv_x_train = auc_pxv_x_train, auc_pxv_z_train = auc_pxv_z_train,
                 auc_pz_train = auc_pz_train, auc_pz_jaco_enco_train = auc_pz_jaco_enco_train, auc_pz_jaco_deco_train = auc_pz_jaco_deco_train, auc_pxv_pz_train = auc_pxv_pz_train, auc_pxv_pz_jaco_enco_train = auc_pxv_pz_jaco_enco_train,
                 auc_pxv_pz_jaco_deco_train = auc_pxv_pz_jaco_deco_train, log_pxv_x_train = log_pxv_x_train, log_pxv_z_train = log_pxv_z_train, z_mmd_dst_test = z_mmd_dst_test, z_mmd_pval_test = z_mmd_pval_test, auc_pxv_x_test = auc_pxv_x_test, auc_pxv_z_test = auc_pxv_z_test,
                 auc_pz_test = auc_pz_test, auc_pz_jaco_enco_test = auc_pz_jaco_enco_test, auc_pz_jaco_deco_test = auc_pz_jaco_deco_test, auc_pxv_pz_test = auc_pxv_pz_test, auc_pxv_pz_jaco_enco_test = auc_pxv_pz_jaco_enco_test,
-                auc_pxv_pz_jaco_deco_test = auc_pxv_pz_jaco_deco_test, log_pxv_x_test = log_pxv_x_test, log_pxv_z_test = log_pxv_z_test, disc_loss_train = disc_loss_train, mean_disc_scores_z_train = mean_disc_scores_z_train, mean_disc_scores_z_test = mean_disc_scores_z_test, mean_disc_scores_z_fake = mean_disc_scores_z_fake)
+                auc_pxv_pz_jaco_deco_test = auc_pxv_pz_jaco_deco_test, log_pxv_x_test = log_pxv_x_test, log_pxv_z_test = log_pxv_z_test, disc_loss_train = disc_loss_train, mean_disc_scores_z_train = mean_disc_scores_z_train, mean_disc_scores_z_test = mean_disc_scores_z_test, mean_disc_scores_z_fake = mean_disc_scores_z_fake,
+                log_pz_train = log_pz_train, log_pz_jaco_enco_train = log_pz_jaco_enco_train, log_pz_jaco_deco_train = log_pz_jaco_deco_train, log_pz_test = log_pz_test, log_pz_jaco_enco_test = log_pz_jaco_enco_test, log_pz_jaco_deco_test = log_pz_jaco_deco_test)
     CSV.write(data_folder * "$run_name-metrics.csv", df)
 end
 
@@ -106,7 +107,7 @@ function compute_metrics(model, x, labels)
     auc_pxv_pz_jaco_enco = computeauc(.-(log_pxv_x .+ log_pz_jaco_enco), labels)
     auc_pxv_pz_jaco_deco = computeauc(.-(log_pxv_x .+ log_pz_jaco_deco), labels)
 
-    return z_mmd_dst, z_mmd_pval, auc_pxv_x, auc_pxv_z, auc_pz, auc_pz_jaco_enco, auc_pz_jaco_deco, auc_pxv_pz, auc_pxv_pz_jaco_enco, auc_pxv_pz_jaco_deco, mean(log_pxv_x), mean(log_pxv_z)
+    return z_mmd_dst, z_mmd_pval, auc_pxv_x, auc_pxv_z, auc_pz, auc_pz_jaco_enco, auc_pz_jaco_deco, auc_pxv_pz, auc_pxv_pz_jaco_enco, auc_pxv_pz_jaco_deco, mean(log_pxv_x), mean(log_pxv_z), mean(log_pz_), mean(log_pz_jaco_enco), mean(log_pz_jaco_deco)
 end
 
 function null_distr_distances(model, k = 500)
@@ -134,7 +135,7 @@ mmdpval(null_dst, x) = searchsortedfirst(null_dst, x) / length(null_dst)
 files = readdir(data_folder)
 # files = readdir(data_folder)[1]
 for f in files
-    if isfile(data_folder * f) && occursin("run_params.csv", f) && (f[1] == 'w')
+    if isfile(data_folder * f) && occursin("run_params.csv", f)
         process_file(f)
     end
 end
