@@ -13,7 +13,7 @@ using FileIO
 
 include("experimentalutils.jl")
 
-data_folder = mainfolder * "experiments/svae_goodness_of_fit_dev_test/"
+data_folder = mainfolder * "experiments/svae_goodness_of_fit_dev/"
 
 function subsample(data, labels, max_anomalies)
     anom_idx = labels .== 1
@@ -145,12 +145,17 @@ function compute_metrics(model, x, labels, compute_mmd = false)
     z_mmd_pval = 0
     if compute_mmd
     println("computing null dst...")
-    z_inds = randperm(size(z, 2))[1:min(300, size(z, 2))]
+    z_norm = z[:, labels .== 0]
+    z_inds = randperm(size(z_norm, 2))[1:min(300, size(z_norm, 2))]
 
     null_dst, null_γ = null_distr_distances(model, length(z_inds))
 
     println("computing mmd dst...")
-    z_mmd_dst = Flux.Tracker.data(IPMeasures.mmd(IPMeasures.IMQKernel(null_γ), sampleVamp(model, length(z_inds)).data, z[:, z_inds], IPMeasures.pairwisecos))
+    z_mmd_dst = 0
+    for i in 1:10
+    z_mmd_dst += Flux.Tracker.data(IPMeasures.mmd(IPMeasures.IMQKernel(null_γ), sampleVamp(model, length(z_inds)).data, z_norm[:, z_inds], IPMeasures.pairwisecos))
+    end
+    z_mmd_dst /= 10
     z_mmd_pval = mmdpval(null_dst, z_mmd_dst)
     end
 
@@ -204,12 +209,12 @@ mmdpval(null_dst, x) = searchsortedfirst(null_dst, x) / length(null_dst)
 
 
 files = filter(f -> occursin("run_params.csv", f), readdir(data_folder))
-# if length(ARGS) != 0
-#     println("ARGS[1] = $(ARGS[1])")
-#     contains = ARGS[1]
-#     files = filter(f -> occursin(contains, f), files)
-# end
-# files = readdir(data_folder)[1]
+if length(ARGS) != 0
+    println("ARGS[1] = $(ARGS[1])")
+    contains = ARGS[1]
+    files = filter(f -> occursin(contains, f), files)
+end
+
 for f in files
     if isfile(data_folder * f)
         process_file(f)
