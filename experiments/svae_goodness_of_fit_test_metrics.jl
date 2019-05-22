@@ -134,7 +134,7 @@ mmdpval(null_dst, x) = searchsortedfirst(null_dst, x) / length(null_dst)
 files = readdir(data_folder)
 # files = readdir(data_folder)[1]
 for f in files
-    if isfile(data_folder * f) && occursin("run_params.csv", f)
+    if isfile(data_folder * f) && occursin("run_params.csv", f) && (f[1] == 'w')
         process_file(f)
     end
 end
