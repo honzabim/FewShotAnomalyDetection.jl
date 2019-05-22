@@ -13,7 +13,7 @@ using FileIO
 
 include("experimentalutils.jl")
 
-data_folder = mainfolder * "experiments/svae_goodness_of_fit_dev_test/"
+data_folder = mainfolder * "experiments/svae_goodness_of_fit_dev/"
 
 function subsample(data, labels, max_anomalies)
     anom_idx = labels .== 1
