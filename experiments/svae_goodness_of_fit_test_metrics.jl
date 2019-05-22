@@ -132,10 +132,15 @@ end
 
 mmdpval(null_dst, x) = searchsortedfirst(null_dst, x) / length(null_dst)
 
-files = readdir(data_folder)
+
+files = filter(f -> occursin("run_params.csv", f), readdir(data_folder))
+if length(ARGS) != 0
+    contains = ARGS[1]
+    files = filter(f -> occursin(contains, f), readdir(data_folder))
+end
 # files = readdir(data_folder)[1]
 for f in files
-    if isfile(data_folder * f) && occursin("run_params.csv", f)
+    if isfile(data_folder * f)
         process_file(f)
     end
 end
