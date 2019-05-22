@@ -72,7 +72,7 @@ end
 
 files = readdir(data_folder)
 # files = readdir(data_folder)[1]
-for f in reverse(files)
+for f in files
     if isfile(data_folder * f) && occursin("metrics.csv", f)
         process_file(f)
     end

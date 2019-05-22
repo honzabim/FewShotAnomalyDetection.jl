@@ -41,8 +41,8 @@ end
 function sel(dff)
     # I = sortperm(dff[:mean_disc_scores_z_test], rev = true)
 
-    qz = quantile(dff[:log_pxv_z_train], 0.95)
-    dff = filter(row -> row[:log_pxv_z_train]>=qz, dff)
+    # qz = quantile(dff[:log_pxv_z_train], 0.95)
+    # dff = filter(row -> row[:log_pxv_z_train]>=qz, dff)
 
     q = quantile(dff[:z_mmd_pval_train],0.95)
     dff = filter(row -> row[:z_mmd_pval_train]>=q, dff)
