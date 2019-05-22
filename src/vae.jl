@@ -128,7 +128,7 @@ end
 function wloss(m::VAE{T,V}, x, d) where {T,V<:Val{:unit}}
 	Ω, z = wass_dist(m, x, d)
 	μx = m.g(z)
-	-mean(log_normal(x, μx)) + Ω
+	-mean(log_normal(x, μx)) + m.β * Ω
 end
 
 function rloss(m::VAE{T,V}, x) where {T,V<:Val{:scalarsigma}}
@@ -178,7 +178,7 @@ function printing_wloss(m::VAE{T,V}, x, d) where {T,V<:Val{:unit}}
 	Ω, z = wass_dist(m, x, d)
 	lklh = -mean(log_normal(x, m.g(z)))
 	println("loglklh: $lklh | wass dist: $Ω")
-	lklh + Ω
+	lklh + m.β * Ω
 end
 
 log_pz(m::VAE, x) = log_normal(hsplitsoftp(m.q(x))[1])
