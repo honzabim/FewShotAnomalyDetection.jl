@@ -13,7 +13,18 @@ using FileIO
 
 include("experimentalutils.jl")
 
-data_folder = mainfolder * "experiments/svae_goodness_of_fit_dev/"
+data_folder = mainfolder * "experiments/svae_goodness_of_fit_dev_test/"
+
+function subsample(data, labels, max_anomalies)
+    anom_idx = labels .== 1
+    norm_data = data[:, .!anom_idx]
+    norm_labels = labels[.!anom_idx]
+
+    num_anom_idx = findall(anom_idx)
+    new_anom_idx = randperm(length(num_anom_idx))[1:min(max_anomalies, length(num_anom_idx))]
+
+    return hcat(norm_data, data[:, new_anom_idx]), vcat(norm_labels, labels[new_anom_idx])
+end
 
 function process_file(f)
     println("$f: loading...")
@@ -28,7 +39,7 @@ function process_file(f)
     β_str = β == 1 ? "1.0" : β == 10 ? "10.0" : "$β"
     γ_str = γ == 1 ? "1.0" : "$γ"
     run_name = "$dataset-$i-$hdim-$ldim-$num_pseudoinputs-$β_str-$γ_str"
-    if isfile(data_folder * "$run_name-metrics.csv")
+    if isfile(data_folder * "$run_name-metrics.csv") || isfile(data_folder * "$run_name-large_metrics.csv")
         println("Skipping $f because it was processed already...")
         return
     end
@@ -51,17 +62,64 @@ function process_file(f)
     mean_disc_scores_z_fake = (-1, -1)
 
     println("$f: computing metrics...")
-    z_mmd_dst_train, z_mmd_pval_train, auc_pxv_x_train, auc_pxv_z_train, auc_pz_train, auc_pz_jaco_enco_train, auc_pz_jaco_deco_train, auc_pxv_pz_train, auc_pxv_pz_jaco_enco_train, auc_pxv_pz_jaco_deco_train, log_pxv_x_train, log_pxv_z_train, log_pz_train, log_pz_jaco_enco_train, log_pz_jaco_deco_train = compute_metrics(svae, x_train, labels_train .- 1)
-    z_mmd_dst_test, z_mmd_pval_test, auc_pxv_x_test, auc_pxv_z_test, auc_pz_test, auc_pz_jaco_enco_test, auc_pz_jaco_deco_test, auc_pxv_pz_test, auc_pxv_pz_jaco_enco_test, auc_pxv_pz_jaco_deco_test, log_pxv_x_test, log_pxv_z_test, log_pz_test, log_pz_jaco_enco_test, log_pz_jaco_deco_test = compute_metrics(svae, x_test, labels_test .- 1)
+    z_mmd_dst_train, z_mmd_pval_train, auc_pxv_x_train, auc_pxv_z_train, auc_pz_train, auc_pz_jaco_enco_train, auc_pz_jaco_deco_train, auc_pxv_pz_train, auc_pxv_pz_jaco_enco_train, auc_pxv_pz_jaco_deco_train, log_pxv_x_train, log_pxv_z_train, log_pz_train, log_pz_jaco_enco_train, log_pz_jaco_deco_train = compute_metrics(svae, x_train, labels_train .- 1, true)
+    z_mmd_dst_test, z_mmd_pval_test, auc_pxv_x_test, auc_pxv_z_test, auc_pz_test, auc_pz_jaco_enco_test, auc_pz_jaco_deco_test, auc_pxv_pz_test, auc_pxv_pz_jaco_enco_test, auc_pxv_pz_jaco_deco_test, log_pxv_x_test, log_pxv_z_test, log_pz_test, log_pz_jaco_enco_test, log_pz_jaco_deco_test = compute_metrics(svae, x_test, labels_test .- 1, true)
     
-    println("$f: saving data...")
     df = DataFrame(dataset = dataset, i = i, hdim = hdim, ldim = ldim, num_pseudoinputs = num_pseudoinputs, β = β, γ = γ, z_mmd_dst_train = z_mmd_dst_train, z_mmd_pval_train = z_mmd_pval_train, auc_pxv_x_train = auc_pxv_x_train, auc_pxv_z_train = auc_pxv_z_train,
                 auc_pz_train = auc_pz_train, auc_pz_jaco_enco_train = auc_pz_jaco_enco_train, auc_pz_jaco_deco_train = auc_pz_jaco_deco_train, auc_pxv_pz_train = auc_pxv_pz_train, auc_pxv_pz_jaco_enco_train = auc_pxv_pz_jaco_enco_train,
                 auc_pxv_pz_jaco_deco_train = auc_pxv_pz_jaco_deco_train, log_pxv_x_train = log_pxv_x_train, log_pxv_z_train = log_pxv_z_train, z_mmd_dst_test = z_mmd_dst_test, z_mmd_pval_test = z_mmd_pval_test, auc_pxv_x_test = auc_pxv_x_test, auc_pxv_z_test = auc_pxv_z_test,
                 auc_pz_test = auc_pz_test, auc_pz_jaco_enco_test = auc_pz_jaco_enco_test, auc_pz_jaco_deco_test = auc_pz_jaco_deco_test, auc_pxv_pz_test = auc_pxv_pz_test, auc_pxv_pz_jaco_enco_test = auc_pxv_pz_jaco_enco_test,
                 auc_pxv_pz_jaco_deco_test = auc_pxv_pz_jaco_deco_test, log_pxv_x_test = log_pxv_x_test, log_pxv_z_test = log_pxv_z_test, disc_loss_train = disc_loss_train, mean_disc_scores_z_train = mean_disc_scores_z_train, mean_disc_scores_z_test = mean_disc_scores_z_test, mean_disc_scores_z_fake = mean_disc_scores_z_fake,
                 log_pz_train = log_pz_train, log_pz_jaco_enco_train = log_pz_jaco_enco_train, log_pz_jaco_deco_train = log_pz_jaco_deco_train, log_pz_test = log_pz_test, log_pz_jaco_enco_test = log_pz_jaco_enco_test, log_pz_jaco_deco_test = log_pz_jaco_deco_test)
-    CSV.write(data_folder * "$run_name-metrics.csv", df)
+
+    println("$f: computing metrics m1...")
+    m1 = Tuple(zeros(13))
+    for j in 1:5
+        x_train1, labels_train1 = subsample(x_train, labels_train .- 1, 1)
+        m1 = m1 .+ compute_metrics(svae, x_train1, labels_train1)
+    end
+    m1 = m1 ./ 10
+
+    println("$f: computing metrics m5...")
+    m5 = Tuple(zeros(13))
+    for j in 1:5
+        x_train5, labels_train5 = subsample(x_train, labels_train .- 1, 5)
+        m5 = m5 .+ compute_metrics(svae, x_train5, labels_train5)
+    end
+    m5 = m5 ./ 10
+
+    println("$f: saving data...")
+    df[:auc_pxv_x_train_a1] = m1[1]
+    df[:auc_pxv_z_train_a1] = m1[2]
+    df[:auc_pz_train_a1] = m1[3]
+    df[:auc_pz_jaco_enco_train_a1] = m1[4]
+    df[:auc_pz_jaco_deco_train_a1] = m1[5]
+    df[:auc_pxv_pz_train_a1] = m1[6]
+    df[:auc_pxv_pz_jaco_enco_train_a1] = m1[7]
+    df[:auc_pxv_pz_jaco_deco_train_a1] = m1[8]
+    df[:log_pxv_x_train_a1] = m1[9]
+    df[:log_pxv_z_train_a1] = m1[10]
+    df[:log_pz_train_a1] = m1[11]
+    df[:log_pz_jaco_enco_train_a1] = m1[12]
+    df[:log_pz_jaco_deco_train_a1] = m1[13]
+
+    df[:auc_pxv_x_train_a5] = m5[1]
+    df[:auc_pxv_z_train_a5] = m5[2]
+    df[:auc_pz_train_a5] = m5[3]
+    df[:auc_pz_jaco_enco_train_a5] = m5[4]
+    df[:auc_pz_jaco_deco_train_a5] = m5[5]
+    df[:auc_pxv_pz_train_a5] = m5[6]
+    df[:auc_pxv_pz_jaco_enco_train_a5] = m5[7]
+    df[:auc_pxv_pz_jaco_deco_train_a5] = m5[8]
+    df[:log_pxv_x_train_a5] = m5[9]
+    df[:log_pxv_z_train_a5] = m5[10]
+    df[:log_pz_train_a5] = m5[11]
+    df[:log_pz_jaco_enco_train_a5] = m5[12]
+    df[:log_pz_jaco_deco_train_a5] = m5[13]
+
+
+                
+    CSV.write(data_folder * "$run_name-large_metrics.csv", df)
 end
 
 function train_disc(svae, x)
@@ -82,12 +140,19 @@ function compute_metrics(model, x, labels, compute_mmd = false)
     xp = model.g(z).data
     zp = zparams(model, xp)[1].data
 
+
+    z_mmd_dst = nothing
+    z_mmd_pval = 0
+    if compute_mmd
     println("computing null dst...")
-    null_dst, null_γ = null_distr_distances(model)
+    z_inds = randperm(size(z, 2))[1:min(300, size(z, 2))]
+
+    null_dst, null_γ = null_distr_distances(model, length(z_inds))
 
     println("computing mmd dst...")
-    z_mmd_dst = Flux.Tracker.data(IPMeasures.mmd(IPMeasures.IMQKernel(null_γ), sampleVamp(model, size(z, 2)).data, z, IPMeasures.pairwisecos))
+    z_mmd_dst = Flux.Tracker.data(IPMeasures.mmd(IPMeasures.IMQKernel(null_γ), sampleVamp(model, length(z_inds)).data, z[:, z_inds], IPMeasures.pairwisecos))
     z_mmd_pval = mmdpval(null_dst, z_mmd_dst)
+    end
 
     println("computing likelihoods...")
     log_pxv_x = vec(collect(FewShotAnomalyDetection.log_normal(x, xp)'))
@@ -107,7 +172,12 @@ function compute_metrics(model, x, labels, compute_mmd = false)
     auc_pxv_pz_jaco_enco = computeauc(.-(log_pxv_x .+ log_pz_jaco_enco), labels)
     auc_pxv_pz_jaco_deco = computeauc(.-(log_pxv_x .+ log_pz_jaco_deco), labels)
 
-    return z_mmd_dst, z_mmd_pval, auc_pxv_x, auc_pxv_z, auc_pz, auc_pz_jaco_enco, auc_pz_jaco_deco, auc_pxv_pz, auc_pxv_pz_jaco_enco, auc_pxv_pz_jaco_deco, mean(log_pxv_x), mean(log_pxv_z), mean(log_pz_), mean(log_pz_jaco_enco), mean(log_pz_jaco_deco)
+    if compute_mmd
+        return z_mmd_dst, z_mmd_pval, auc_pxv_x, auc_pxv_z, auc_pz, auc_pz_jaco_enco, auc_pz_jaco_deco, auc_pxv_pz, auc_pxv_pz_jaco_enco, auc_pxv_pz_jaco_deco, mean(log_pxv_x), mean(log_pxv_z), mean(log_pz_), mean(log_pz_jaco_enco), mean(log_pz_jaco_deco)
+    else
+        return auc_pxv_x, auc_pxv_z, auc_pz, auc_pz_jaco_enco, auc_pz_jaco_deco, auc_pxv_pz, auc_pxv_pz_jaco_enco, auc_pxv_pz_jaco_deco, mean(log_pxv_x), mean(log_pxv_z), mean(log_pz_), mean(log_pz_jaco_enco), mean(log_pz_jaco_deco)
+        
+    end
 end
 
 function null_distr_distances(model, k = 500)
@@ -115,7 +185,7 @@ function null_distr_distances(model, k = 500)
     z2 = sampleVamp(model, 500).data 
     γ = get_γ(z1, z2)
     null_dst = zeros(Float32, k)
-    for i in 1:k
+    for i in 1:100
         z1 = sampleVamp(model, k).data
         z2 = sampleVamp(model, k).data
         null_dst[i] = IPMeasures.mmd(IPMeasures.IMQKernel(γ), z1, z2, IPMeasures.pairwisecos)
@@ -134,10 +204,11 @@ mmdpval(null_dst, x) = searchsortedfirst(null_dst, x) / length(null_dst)
 
 
 files = filter(f -> occursin("run_params.csv", f), readdir(data_folder))
-if length(ARGS) != 0
-    contains = ARGS[1]
-    files = filter(f -> occursin(contains, f), files)
-end
+# if length(ARGS) != 0
+#     println("ARGS[1] = $(ARGS[1])")
+#     contains = ARGS[1]
+#     files = filter(f -> occursin(contains, f), files)
+# end
 # files = readdir(data_folder)[1]
 for f in files
     if isfile(data_folder * f)
