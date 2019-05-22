@@ -85,7 +85,7 @@ function null_distr_distances(model, k = 500)
     z1 = sampleVamp(model, 500).data
     z2 = sampleVamp(model, 500).data 
     γ = get_γ(z1, z2)
-    null_dst = zeros(Float32, k)
+    null_dst = zeros(Float32, 100)
     for i in 1:100
         z1 = sampleVamp(model, k).data
         z2 = sampleVamp(model, k).data
