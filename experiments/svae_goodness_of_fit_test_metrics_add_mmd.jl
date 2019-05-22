@@ -41,8 +41,9 @@ function process_file(f)
     run_name = "$dataset-$i-$hdim-$ldim-$num_pseudoinputs-$β_str-$γ_str"
     
     println("$f: loading existing metrics...")
-    df = CSV.read(data_folder * "$run_name-large_metrics.csv")
-
+    types = DataType[String, Int64, Int64, Int64, Int64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, String, String, String, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64]
+    df = DataFrame(CSV.read(data_folder * "$run_name-large_metrics.csv", types = types))
+    
     svae = deserialize(data_folder * "$run_name-svae.jls")
     (x_train, labels_train) = deserialize(data_folder * "$dataset-$i-train.jls")
     (x_test, labels_test) = deserialize(data_folder * "$dataset-$i-test.jls")

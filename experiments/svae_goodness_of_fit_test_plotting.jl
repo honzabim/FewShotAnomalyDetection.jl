@@ -9,10 +9,10 @@ include("experimentalutils.jl")
 
 data_folder = mainfolder * "experiments/svae_goodness_of_fit_dev/"
 
-files = filter(s -> occursin("metrics.csv", s), readdir(data_folder))
+files = filter(s -> occursin("large_metrics.csv", s), readdir(data_folder))
 results = []
 for f in files
-    if isfile(data_folder * f) && occursin("metrics.csv", f)
+    if isfile(data_folder * f)
         push!(results, CSV.read(data_folder * f))
     end
 end
