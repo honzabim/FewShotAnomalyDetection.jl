@@ -48,6 +48,7 @@ df = "easy"
 
 println("Loading data...")
 train, test, clusterdness = loaddata(dn, df)
+ADatasets.subsampleanomalous(train, 0.1)
 println("Saving data...")
 serialize(outputFolder * "$dn-$i-train.jls", train)
 serialize(outputFolder * "$dn-$i-test.jls", test)
