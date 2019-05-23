@@ -39,7 +39,7 @@ function process_file(f)
     β_str = β == 1 ? "1.0" : β == 10 ? "10.0" : "$β"
     γ_str = γ == 1 ? "1.0" : "$γ"
     run_name = "$dataset-$i-$hdim-$ldim-$num_pseudoinputs-$β_str-$γ_str"
-    if isfile(data_folder * "$run_name-metrics.csv") || isfile(data_folder * "$run_name-large_metrics.csv")
+    if isfile(data_folder * "$run_name-large_metrics_is.csv")
         println("Skipping $f because it was processed already...")
         return
     end
@@ -62,8 +62,8 @@ function process_file(f)
     mean_disc_scores_z_fake = (-1, -1)
 
     println("$f: computing metrics...")
-    z_mmd_dst_train, z_mmd_pval_train, auc_pxv_x_train, auc_pxv_z_train, auc_pz_train, auc_pz_jaco_enco_train, auc_pz_jaco_deco_train, auc_pxv_pz_train, auc_pxv_pz_jaco_enco_train, auc_pxv_pz_jaco_deco_train, log_pxv_x_train, log_pxv_z_train, log_pz_train, log_pz_jaco_enco_train, log_pz_jaco_deco_train = compute_metrics(svae, x_train, labels_train .- 1, true)
-    z_mmd_dst_test, z_mmd_pval_test, auc_pxv_x_test, auc_pxv_z_test, auc_pz_test, auc_pz_jaco_enco_test, auc_pz_jaco_deco_test, auc_pxv_pz_test, auc_pxv_pz_jaco_enco_test, auc_pxv_pz_jaco_deco_test, log_pxv_x_test, log_pxv_z_test, log_pz_test, log_pz_jaco_enco_test, log_pz_jaco_deco_test = compute_metrics(svae, x_test, labels_test .- 1, true)
+    z_mmd_dst_train, z_mmd_pval_train, auc_pxv_x_train, auc_pxv_z_train, auc_pz_train, auc_pz_jaco_enco_train, auc_pz_jaco_deco_train, auc_pxv_pz_train, auc_pxv_pz_jaco_enco_train, auc_pxv_pz_jaco_deco_train, log_pxv_x_train, log_pxv_z_train, log_pz_train, log_pz_jaco_enco_train, log_pz_jaco_deco_train, log_px_is_train, auc_px_is_train = compute_metrics(svae, x_train, labels_train .- 1, true)
+    z_mmd_dst_test, z_mmd_pval_test, auc_pxv_x_test, auc_pxv_z_test, auc_pz_test, auc_pz_jaco_enco_test, auc_pz_jaco_deco_test, auc_pxv_pz_test, auc_pxv_pz_jaco_enco_test, auc_pxv_pz_jaco_deco_test, log_pxv_x_test, log_pxv_z_test, log_pz_test, log_pz_jaco_enco_test, log_pz_jaco_deco_test, log_px_is_test, auc_px_is_test = compute_metrics(svae, x_test, labels_test .- 1, true)
     
     df = DataFrame(dataset = dataset, i = i, hdim = hdim, ldim = ldim, num_pseudoinputs = num_pseudoinputs, β = β, γ = γ, z_mmd_dst_train = z_mmd_dst_train, z_mmd_pval_train = z_mmd_pval_train, auc_pxv_x_train = auc_pxv_x_train, auc_pxv_z_train = auc_pxv_z_train,
                 auc_pz_train = auc_pz_train, auc_pz_jaco_enco_train = auc_pz_jaco_enco_train, auc_pz_jaco_deco_train = auc_pz_jaco_deco_train, auc_pxv_pz_train = auc_pxv_pz_train, auc_pxv_pz_jaco_enco_train = auc_pxv_pz_jaco_enco_train,
@@ -73,7 +73,7 @@ function process_file(f)
                 log_pz_train = log_pz_train, log_pz_jaco_enco_train = log_pz_jaco_enco_train, log_pz_jaco_deco_train = log_pz_jaco_deco_train, log_pz_test = log_pz_test, log_pz_jaco_enco_test = log_pz_jaco_enco_test, log_pz_jaco_deco_test = log_pz_jaco_deco_test)
 
     println("$f: computing metrics m1...")
-    m1 = Tuple(zeros(13))
+    m1 = Tuple(zeros(15))
     for j in 1:5
         x_train1, labels_train1 = subsample(x_train, labels_train .- 1, 1)
         m1 = m1 .+ compute_metrics(svae, x_train1, labels_train1)
@@ -81,7 +81,7 @@ function process_file(f)
     m1 = m1 ./ 10
 
     println("$f: computing metrics m5...")
-    m5 = Tuple(zeros(13))
+    m5 = Tuple(zeros(15))
     for j in 1:5
         x_train5, labels_train5 = subsample(x_train, labels_train .- 1, 5)
         m5 = m5 .+ compute_metrics(svae, x_train5, labels_train5)
@@ -118,8 +118,12 @@ function process_file(f)
     df[:log_pz_jaco_deco_train_a5] = m5[13]
 
 
+    df[:log_px_is_train] = log_px_is_train
+    df[:log_px_is_test] = log_px_is_test
+    df[:auc_px_is_train] = auc_px_is_train
+    df[:auc_px_is_test] = auc_px_is_test
                 
-    CSV.write(data_folder * "$run_name-large_metrics.csv", df)
+    CSV.write(data_folder * "$run_name-large_metrics_is.csv", df)
 end
 
 function train_disc(svae, x)
@@ -164,6 +168,7 @@ function compute_metrics(model, x, labels, compute_mmd = false)
     log_pxv_z = vec(collect(sum((z .- zp) .^ 2, dims = 1)'))
 
     log_pz_ = vec(collect(log_pz(model, x)'))
+    log_px_is = log_px(model, x)
     log_pz_jaco_enco = vec(collect(log_pz_jacobian_encoder(model, x)'))
     log_pz_jaco_deco = vec(collect(log_pz_jacobian_decoder(model, z)'))
 
@@ -171,6 +176,7 @@ function compute_metrics(model, x, labels, compute_mmd = false)
     auc_pxv_x = computeauc(.-log_pxv_x, labels)
     auc_pxv_z = computeauc(.-log_pxv_z, labels)
     auc_pz = computeauc(.-log_pz_, labels)
+    auc_px_is = computeauc(.-log_px_is, labels)
     auc_pz_jaco_enco = computeauc(.-(log_pz_jaco_enco), labels)
     auc_pz_jaco_deco = computeauc(.-(log_pz_jaco_deco), labels)
     auc_pxv_pz = computeauc(.-(log_pxv_x .+ log_pz_), labels)
@@ -178,9 +184,9 @@ function compute_metrics(model, x, labels, compute_mmd = false)
     auc_pxv_pz_jaco_deco = computeauc(.-(log_pxv_x .+ log_pz_jaco_deco), labels)
 
     if compute_mmd
-        return z_mmd_dst, z_mmd_pval, auc_pxv_x, auc_pxv_z, auc_pz, auc_pz_jaco_enco, auc_pz_jaco_deco, auc_pxv_pz, auc_pxv_pz_jaco_enco, auc_pxv_pz_jaco_deco, mean(log_pxv_x), mean(log_pxv_z), mean(log_pz_), mean(log_pz_jaco_enco), mean(log_pz_jaco_deco)
+        return z_mmd_dst, z_mmd_pval, auc_pxv_x, auc_pxv_z, auc_pz, auc_pz_jaco_enco, auc_pz_jaco_deco, auc_pxv_pz, auc_pxv_pz_jaco_enco, auc_pxv_pz_jaco_deco, mean(log_pxv_x), mean(log_pxv_z), mean(log_pz_), mean(log_pz_jaco_enco), mean(log_pz_jaco_deco), mean(log_px_is), auc_px_is 
     else
-        return auc_pxv_x, auc_pxv_z, auc_pz, auc_pz_jaco_enco, auc_pz_jaco_deco, auc_pxv_pz, auc_pxv_pz_jaco_enco, auc_pxv_pz_jaco_deco, mean(log_pxv_x), mean(log_pxv_z), mean(log_pz_), mean(log_pz_jaco_enco), mean(log_pz_jaco_deco)
+        return auc_pxv_x, auc_pxv_z, auc_pz, auc_pz_jaco_enco, auc_pz_jaco_deco, auc_pxv_pz, auc_pxv_pz_jaco_enco, auc_pxv_pz_jaco_deco, mean(log_pxv_x), mean(log_pxv_z), mean(log_pz_), mean(log_pz_jaco_enco), mean(log_pz_jaco_deco), mean(log_px_is), auc_px_is
         
     end
 end
@@ -209,14 +215,29 @@ mmdpval(null_dst, x) = searchsortedfirst(null_dst, x) / length(null_dst)
 
 
 files = filter(f -> occursin("run_params.csv", f), readdir(data_folder))
+dataset = "no dataset"
+it = 0
 if length(ARGS) != 0
     println("ARGS[1] = $(ARGS[1])")
-    contains = ARGS[1]
-    files = filter(f -> occursin(contains, f), files)
+    dataset = ARGS[1]
+    if length(ARGS) > 1
+        println("ARGS[1] = $(ARGS[1]) ARGS[2] = $(ARGS[2])")
+        it = parse(Int, ARGS[2])
+    end
+    if (it > 0)
+        files = filter(f -> occursin("$dataset-$it-", f), files)
+    else
+        files = filter(f -> occursin(dataset, f), files)
+    end
 end
 
-for f in files
+if length(ARGS) > 2
+    files = reverse(files)
+end
+
+for (i, f) in enumerate(files)
     if isfile(data_folder * f)
+        println("$dataset-$it: $i/$(length(files))")
         process_file(f)
     end
 end

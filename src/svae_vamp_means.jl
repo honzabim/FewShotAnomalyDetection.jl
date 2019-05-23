@@ -68,3 +68,22 @@ function pz_singleinstance(m::SVAEvampmeans, z)
 	end
 	p /= size(m.pseudo_inputs, 2)
 end
+
+function log_px(m::SVAEvampmeans, x::Matrix, k::Int = 100) 
+	x = [x[:, i] for i in 1:size(x, 2)]
+	return map(a -> log_px(m, a, k), x)
+end
+
+function log_px(m::SVAEvampmeans, x::Vector, k::Int = 100)
+	μz, κz = zparams(m, x)
+	μz = repeat(Flux.Tracker.data(μz), 1, k)
+	κz = repeat(Flux.Tracker.data(κz), 1, k)
+	z = Flux.Tracker.data(samplez(m, μz, κz))
+	xgivenz = Flux.Tracker.data(m.g(z))
+
+	log_pxgivenz = log_normal(repeat(x, 1, k), xgivenz)
+	log_pz = log_pz_from_z(m, z)
+	log_qzgivenx = log_vmf_wo_c(z, μz[:, 1], κz[1])
+
+	return log(sum(exp.(Flux.Tracker.data(log_pxgivenz .+ log_pz .- log_qzgivenx))))
+end
