@@ -13,7 +13,7 @@ using FileIO
 
 include("experimentalutils.jl")
 
-data_folder = mainfolder * "experiments/svae_latent_dim_dev/"
+data_folder = mainfolder * "experiments/svae_latent_dim_test/"
 
 function subsample(data, labels, max_anomalies)
     anom_idx = labels .== 1
@@ -65,9 +65,9 @@ function process_file(f)
     auc_pxv_x_train, auc_pxv_z_train, auc_pz_train, auc_pz_jaco_enco_train, auc_pz_jaco_deco_train, auc_pxv_pz_train, auc_pxv_pz_jaco_enco_train, auc_pxv_pz_jaco_deco_train, log_pxv_x_train, log_pxv_z_train, log_pz_train, log_pz_jaco_enco_train, log_pz_jaco_deco_train, log_px_is_train, auc_px_is_train = compute_metrics(svae, x_train, labels_train .- 1)
     auc_pxv_x_test, auc_pxv_z_test, auc_pz_test, auc_pz_jaco_enco_test, auc_pz_jaco_deco_test, auc_pxv_pz_test, auc_pxv_pz_jaco_enco_test, auc_pxv_pz_jaco_deco_test, log_pxv_x_test, log_pxv_z_test, log_pz_test, log_pz_jaco_enco_test, log_pz_jaco_deco_test, log_px_is_test, auc_px_is_test = compute_metrics(svae, x_test, labels_test .- 1)
     
-    df = DataFrame(dataset = dataset, i = i, hdim = hdim, ldim = ldim, num_pseudoinputs = num_pseudoinputs, β = β, γ = γ, z_mmd_dst_train = z_mmd_dst_train, z_mmd_pval_train = z_mmd_pval_train, auc_pxv_x_train = auc_pxv_x_train, auc_pxv_z_train = auc_pxv_z_train,
+    df = DataFrame(dataset = dataset, i = i, hdim = hdim, ldim = ldim, num_pseudoinputs = num_pseudoinputs, β = β, γ = γ, auc_pxv_x_train = auc_pxv_x_train, auc_pxv_z_train = auc_pxv_z_train,
                 auc_pz_train = auc_pz_train, auc_pz_jaco_enco_train = auc_pz_jaco_enco_train, auc_pz_jaco_deco_train = auc_pz_jaco_deco_train, auc_pxv_pz_train = auc_pxv_pz_train, auc_pxv_pz_jaco_enco_train = auc_pxv_pz_jaco_enco_train,
-                auc_pxv_pz_jaco_deco_train = auc_pxv_pz_jaco_deco_train, log_pxv_x_train = log_pxv_x_train, log_pxv_z_train = log_pxv_z_train, z_mmd_dst_test = z_mmd_dst_test, z_mmd_pval_test = z_mmd_pval_test, auc_pxv_x_test = auc_pxv_x_test, auc_pxv_z_test = auc_pxv_z_test,
+                auc_pxv_pz_jaco_deco_train = auc_pxv_pz_jaco_deco_train, log_pxv_x_train = log_pxv_x_train, log_pxv_z_train = log_pxv_z_train, auc_pxv_x_test = auc_pxv_x_test, auc_pxv_z_test = auc_pxv_z_test,
                 auc_pz_test = auc_pz_test, auc_pz_jaco_enco_test = auc_pz_jaco_enco_test, auc_pz_jaco_deco_test = auc_pz_jaco_deco_test, auc_pxv_pz_test = auc_pxv_pz_test, auc_pxv_pz_jaco_enco_test = auc_pxv_pz_jaco_enco_test,
                 auc_pxv_pz_jaco_deco_test = auc_pxv_pz_jaco_deco_test, log_pxv_x_test = log_pxv_x_test, log_pxv_z_test = log_pxv_z_test, disc_loss_train = disc_loss_train, mean_disc_scores_z_train = mean_disc_scores_z_train, mean_disc_scores_z_test = mean_disc_scores_z_test, mean_disc_scores_z_fake = mean_disc_scores_z_fake,
                 log_pz_train = log_pz_train, log_pz_jaco_enco_train = log_pz_jaco_enco_train, log_pz_jaco_deco_train = log_pz_jaco_deco_train, log_pz_test = log_pz_test, log_pz_jaco_enco_test = log_pz_jaco_enco_test, log_pz_jaco_deco_test = log_pz_jaco_deco_test)
@@ -170,23 +170,23 @@ mmdpval(null_dst, x) = searchsortedfirst(null_dst, x) / length(null_dst)
 files = filter(f -> occursin("run_params.csv", f), readdir(data_folder))
 dataset = "no dataset"
 it = 0
-if length(ARGS) != 0
-    println("ARGS[1] = $(ARGS[1])")
-    dataset = ARGS[1]
-    if length(ARGS) > 1
-        println("ARGS[1] = $(ARGS[1]) ARGS[2] = $(ARGS[2])")
-        it = parse(Int, ARGS[2])
-    end
-    if (it > 0)
-        files = filter(f -> occursin("$dataset-$it-", f), files)
-    else
-        files = filter(f -> occursin(dataset, f), files)
-    end
-end
+# if length(ARGS) != 0
+#     println("ARGS[1] = $(ARGS[1])")
+#     dataset = ARGS[1]
+#     if length(ARGS) > 1
+#         println("ARGS[1] = $(ARGS[1]) ARGS[2] = $(ARGS[2])")
+#         it = parse(Int, ARGS[2])
+#     end
+#     if (it > 0)
+#         files = filter(f -> occursin("$dataset-$it-", f), files)
+#     else
+#         files = filter(f -> occursin(dataset, f), files)
+#     end
+# end
 
-if length(ARGS) > 2
-    files = reverse(files)
-end
+# if length(ARGS) > 2
+files = reverse(files)
+# end
 
 for (i, f) in enumerate(files)
     if isfile(data_folder * f)

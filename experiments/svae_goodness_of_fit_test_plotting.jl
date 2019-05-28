@@ -3,20 +3,35 @@ using CSV
 using Statistics
 using FileIO
 using Plots
-plotlyjs()
 
 include("experimentalutils.jl")
 
 data_folder = mainfolder * "experiments/svae_goodness_of_fit_dev/"
 
-files = filter(s -> occursin("large_metrics.csv", s), readdir(data_folder))
+files = filter(s -> occursin("large_metrics_is.csv", s), readdir(data_folder))
 results = []
-for f in files
+l = []
+for (i,f) in enumerate(files)
     if isfile(data_folder * f)
-        push!(results, CSV.read(data_folder * f))
+        df = CSV.read(data_folder * f)
+        push!(results, df)
+        push!(l, size(df, 2))
+        if size(df, 1) > 1
+            println("$f seems corrupted, saving just first row...")
+            CSV.write(data_folder * f, DataFrame(df[1, :]))
+        end
+        # if (df[:dataset][1] == "3459766")
+        #     println("$f has a missing dataset!")
+        # end
     end
 end
 results = vcat(results...)
+unique(results[:dataset])
+
+using StatsPlots
+plotlyjs()
+@df results violin(:dataset,:auc_pxv_x_test, side=:left, linewidth = 0, label="pxv", size = (1200, 800))
+@df results violin!(:dataset,:auc_pxv_pz_jaco_deco_test, linewidth = 0, side=:right, label="pxv_pz_jaco_deco")
 
 # for d in unique(results[:dataset])
 #     pp = []
