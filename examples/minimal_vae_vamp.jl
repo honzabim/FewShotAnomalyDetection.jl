@@ -5,6 +5,7 @@ using MLDataPattern
 using IPMeasures
 using Adapt
 using FluxExtensions
+using Statistics
 
 hiddenDim = 32
 latentDim = 3
@@ -64,7 +65,7 @@ learn_with_labels(data, labels) = wloss(vae, data, labels, (x, y) -> IPMeasures.
 # Unsupervised learning
 opt = Flux.Optimise.ADAM(1e-4) # Watch our, the learning rate may have a lot of impact on your learning...
 cb = Flux.throttle(() -> println("VAE - loss: $(learn_without_labels(train[1]))"), 5)
-Flux.@epochs 10 Flux.train!(learn_without_labels, Flux.params(vae), RandomBatches((train[1],), size = batchSize, count = numBatches), opt, cb = cb)
+Flux.@epochs 1 Flux.train!(learn_without_labels, Flux.params(vae), RandomBatches((train[1],), size = batchSize, count = numBatches), opt, cb = cb)
 println("Train err: $(learn_without_labels(train[1])) vs test error: $(learn_without_labels(test[1]))")
 
 # Adding some anomal centroids to the centroids memory of VAE
@@ -81,4 +82,8 @@ anomalies = collect(repeat(anomalies, 1, fit_times)[:, 1:size(train[1], 2)])
 # learn with labels
 cb = Flux.throttle(() -> println("VAE loss on test: $(learn_with_labels(test[1], test[2]))"), 10)
 loss(normal, anomalous) = learn_with_labels(hcat(normal, anomalous), vcat(zeros(Int, size(normal, 2)), ones(Int, size(anomalous, 2))))
-Flux.@epochs 10 Flux.train!(loss, Flux.params(vae), RandomBatches((train[1], anomalies), size = batchSize, count = numBatches), opt, cb = cb)
+Flux.@epochs 1 Flux.train!(loss, Flux.params(vae), RandomBatches((train[1], anomalies), size = batchSize, count = numBatches), opt, cb = cb)
+
+pz_tst = pz(vae, test[1]) # return a vector for each point determining [p(z|y = 0), p(z|y = 1)] - you have to come up with some score from this I guess
+mean(pz_tst[:, test[2] .== 0], dims = 2) # these are more likely given label = 0
+mean(pz_tst[:, test[2] .== 1], dims = 2) # these are more likely given label = 1

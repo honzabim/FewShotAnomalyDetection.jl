@@ -71,16 +71,16 @@ end
 function pz_singleinstance(m::VAEvamp{T,V}, x) where {T,V<:Val{:unit}}
 	@assert size(x, 2) == 1
 	μz = m.q(x).data
-    centroids_0 = m.centroids[m.labels .== 0]
-    centroids_1 = m.centroids[m.labels .== 1]
+    centroids_0 = m.q(m.centroids[:, m.labels .== 0]).data
+    centroids_1 = m.q(m.centroids[:, m.labels .== 1]).data
 	p0 = 0
-	for i in 1:size(centroids_0, 2)
-		p0 += exp.(log_normal(μz, centroids_0[:, i]))
+    for i in 1:size(centroids_0, 2)
+		p0 += exp(log_normal(μz, centroids_0[:, i])[1])
 	end
     p0 /= size(centroids_0, 2)
     p1 = 0
 	for i in 1:size(centroids_1, 2)
-		p1 += exp.(log_normal(μz, centroids_1[:, i]))
+		p1 += exp(log_normal(μz, centroids_1[:, i])[1])
 	end
     p1 /= size(centroids_1, 2)
     return p0, p1
