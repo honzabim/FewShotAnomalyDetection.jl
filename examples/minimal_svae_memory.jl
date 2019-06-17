@@ -2,12 +2,14 @@ using FewShotAnomalyDetection
 using UCI
 using Flux
 using MLDataPattern
+using FluxExtensions
+using Adapt
 
 
 hiddenDim = 32
 latentDim = 3
 numLayers = 3
-nonlinearity = "relu"
+nonlinearity = "swish"
 layerType = "Dense"
 β = 0.1 # ratio between reconstruction error and the distance between p(z) and q(z)
 α = 0.1 # threshold in the memory that does not matter to us at the moment!
@@ -44,8 +46,9 @@ test = (_X_tst, _y_tst)
 # SVAE itself
 ##############################################
 inputdim = size(train[1], 1)
+encoder = Adapt.adapt(Float32, FluxExtensions.layerbuilder(inputdim, hiddenDim, latentDim, numLayers + 1, nonlinearity, "linear", layerType))
+decoder = Adapt.adapt(Float32, FluxExtensions.layerbuilder(latentDim, hiddenDim, inputdim, numLayers + 1, nonlinearity, "linear", layerType))
 svae = SVAEbase(inputdim, hiddenDim, latentDim, numLayers, nonlinearity, layerType)
-mem = KNNmemory{Float32}(memorySize, inputdim, k, labelCount, (x) -> zparams(svae, x)[1], α)
 
 # Basic Wasserstein loss to train the svae on unlabelled data
 trainRepresentation(data) = wloss(svae, data, β, (x, y) -> FewShotAnomalyDetection.mmd_imq(x, y, 1))

@@ -1,24 +1,5 @@
 abstract type SVAE end
 
-normalizecolumns(m::AbstractArray{T, 2}) where {T<:Number} = m ./ sqrt.(sum(m .^ 2, dims = 1) .+ eps(T))
-function normalizecolumns!(m::AbstractArray{T, 2}) where {T<:Number}
-	m .= normalizecolumns(m)
-end
-
-"""
-	vmfentropy(m, κ)
-
-	Entropy of Von Mises-Fisher distribution
-"""
-vmfentropy(m, κ) = .-κ .* besselix(m / 2, κ) ./ besselix(m / 2 - 1, κ) .- ((m ./ 2 .- 1) .* log.(κ) .- (m ./ 2) .* log(2π) .- (κ .+ log.(besselix(m / 2 - 1, κ))))
-
-"""
-	huentropy(m)
-
-	Entropy of Hyperspherical Uniform distribution
-"""
-huentropy(m) = m / 2 * log(π) + log(2) - lgamma(m / 2)
-
 """
 	kldiv(model::SVAE, κ)
 
@@ -26,44 +7,9 @@ huentropy(m) = m / 2 * log(π) + log(2) - lgamma(m / 2)
 """
 kldiv(model::SVAE, κ) = .- vmfentropy(model.zdim, κ) .+ model.hue
 
-log_normal(x) = - sum((x .^ 2), dims = 1) ./ 2 .- size(x, 1) .* log(2π) ./ 2
-log_normal(x, μ) = log_normal(x - μ)
-log_normal(x,μ, σ2::AbstractArray{T}) where {T<:Number} = - sum((x - μ) .^ 2 ./ σ2 .+ log.(σ2 .* 2π), dims = 1) / 2
-
-# Likelihood estimation of a sample x under VMF with given parameters taken from https://pdfs.semanticscholar.org/2b5b/724fb175f592c1ff919cc61499adb26996b1.pdf
-# normalizing constant for density function of VMF
-c(p, κ) = κ ^ (p / 2 - 1) / ((2π) ^ (p / 2) * besseli(p / 2 - 1, κ))
-
-# log likelihood of one sample under the VMF dist with given parameters
-log_vmf_c(x, μ, κ) = κ * μ' * x .+ log(c(length(μ), κ))
-log_vmf_c(x::AbstractMatrix, μ::AbstractMatrix, κ::T) where {T <: Number} = [log_vmf_c(x[:, i], μ[:, i], κ) for i in size(x, 2)] 
-log_vmf_c(x::AbstractMatrix, μ::AbstractMatrix, κ::AbstractVector) = [log_vmf_c(x[:, i], μ[:, i], κ[i]) for i in size(x, 2)] 
-log_vmf_wo_c(x, μ, κ) = κ * μ' * x
-
-pairwisecos(x, y) = max.(1 .- (x' * y), 0) # This is a bit of a hack to avoid the distance being negative due to float
-pairwisecos(x) = pairwisecos(x, x)
-
-k_imq(x, y, c) = sum( c./ (c .+ pairwisecos(x, y))) / (size(x, 2) * size(y, 2))
-k_imq(x::T, c) where {T <: AbstractMatrix} = sum(c ./ (c .+ pairwisecos(x))) / (size(x, 2) * (size(x, 2) - 1))
-k_imq(x::T, c) where {T <: AbstractVector} = zero(eltype(x))
-
-mmd_imq(x,y,c) = k_imq(x,c) + k_imq(y,c) - 2 * k_imq(x,y,c)
-
-function samplehsuniform(size...)
-	v = randn(size...)
-	v = normalizecolumns(v)
-end
-
 function log_pxexpectedz(m::SVAE, x)
 	xgivenz = m.g(zparams(m, x)[1])
 	Flux.Tracker.data(log_normal(x, xgivenz))
-end
-
-cart3dtoangular(x) = [acos(1.0 * x[3] / norm(x)), 1.0 * atan(x[2] / x[1])]
-
-function cart2spherical(x)
-	scoords = vcat([acot(x[i] / norm(x[(i + 1):end])) for i in 1:(length(x) - 2)]...)
-	scoords = vcat(scoords, 2acot((x[end - 1] + norm(x[(end-1):end])) / x[end]))
 end
 
 jacobian_encoder(m::SVAE, x) = Flux.Tracker.jacobian(a -> Chain(m.q, m.μzfromhidden)(a), x)
@@ -101,23 +47,6 @@ function log_pz_jacobian_decoder_singleinstance(m::SVAE, z)
 	d = reduce(+, log.(abs.(s.S))) * 2
 	-d + log_pz_from_z(m, z)
 end
-
-# function log_pz_jacobian(m::SVAE, x, z)
-# 	if size(x, 2) > 1
-# 		xs = [x[:, i] for i in 1:size(x, 2)]
-# 		zs = [z[:, i] for i in 1:size(z, 2)]
-# 		return map((x, z) -> log_pz_jacobian_singleinstance(m, x, z), xs, zs)
-# 	else
-# 		return log_pz_jacobian_singleinstance(m, x, z)
-# 	end
-# end
-
-# function log_pz_jacobian_singleinstance(m::SVAE, x, z)
-# 	@assert size(x, 2) == 1
-# 	s = svd(jacobian(m, x).data)
-# 	d = reduce(+, log.(abs.(s.S)))
-# 	d + log(pz_from_z(m, z))
-# end
 
 """
 	infer(m::SVAE, x)

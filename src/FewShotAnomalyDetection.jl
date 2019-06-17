@@ -12,6 +12,7 @@ using EvalCurves
 using Pkg
 using Statistics
 
+include("utils.jl")
 include("KNNmemory.jl")
 include("bessel.jl")
 include("svae.jl")
@@ -20,6 +21,7 @@ include("svaetwocaps.jl")
 include("svae_vamp.jl")
 include("svae_vamp_means.jl")
 include("vae.jl")
+include("vae_vamp_wass.jl")
 
 if in("CuArrays",keys(Pkg.installed())) && in("CUDAnative",keys(Pkg.installed()))
     using CuArrays
@@ -27,6 +29,6 @@ if in("CuArrays",keys(Pkg.installed())) && in("CUDAnative",keys(Pkg.installed())
     include("svae_gpu.jl")
 end
 
-export SVAE, SVAEbase, SVAEtwocaps, SVAEvamp, SVAEvampmeans, VAE, loss, wloss, decomposed_wloss, rloss, log_pxexpectedz, pz, log_pz, log_px, log_pz_jacobian_encoder, log_pz_jacobian_decoder, samplez, sampleVamp, zparams, zfromx, printing_wloss, mem_wloss, log_det_jacobian_encoder, log_det_jacobian_decoder, hsplit1softp
+export SVAE, SVAEbase, SVAEtwocaps, SVAEvamp, SVAEvampmeans, VAE, loss, wloss, decomposed_wloss, rloss, log_pxexpectedz, pz, log_pz, log_px, log_pz_jacobian_encoder, log_pz_jacobian_decoder, samplez, sampleVamp, zparams, zfromx, printing_wloss, mem_wloss, log_det_jacobian_encoder, log_det_jacobian_decoder, hsplit1softp, VAEvamp, add_labeled_centroid!
 
 end
