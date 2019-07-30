@@ -29,6 +29,6 @@ if in("CuArrays",keys(Pkg.installed())) && in("CUDAnative",keys(Pkg.installed())
     include("svae_gpu.jl")
 end
 
-export SVAE, SVAEbase, SVAEtwocaps, SVAEvamp, SVAEvampmeans, VAE, loss, wloss, decomposed_wloss, rloss, log_pxexpectedz, pz, log_pz, log_px, log_pz_jacobian_encoder, log_pz_jacobian_decoder, samplez, sampleVamp, zparams, zfromx, printing_wloss, mem_wloss, log_det_jacobian_encoder, log_det_jacobian_decoder, hsplit1softp, VAEvamp, add_labeled_centroid!
+export SVAE, SVAEbase, SVAEtwocaps, SVAEvamp, SVAEvampmeans, VAE, elbo_loss, decomposed_elbo_loss, wloss, decomposed_wloss, rloss, log_pxexpectedz, pz, log_pz, log_px, log_pz_jacobian_encoder, log_pz_jacobian_decoder, samplez, sampleVamp, zparams, zfromx, printing_wloss, mem_wloss, log_det_jacobian_encoder, log_det_jacobian_decoder, hsplit1softp, VAEvamp, add_labeled_centroid!
 
 end

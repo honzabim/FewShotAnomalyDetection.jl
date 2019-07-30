@@ -38,7 +38,7 @@ end
 VAE(q,g,β,s::Symbol = :unit) = VAE(q,g,β,Val(s))
 
 function VAE(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, β, V = :unit, T = Float32)
-	encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, hiddenDim, numLayers + 1, nonlinearity, "linear", layerType))
+	encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, latentDim * 2, numLayers + 1, nonlinearity, "linear", layerType))
     decoder = Adapt.adapt(T, FluxExtensions.layerbuilder(latentDim, hiddenDim, inputDim, numLayers + 1, nonlinearity, "linear", layerType))
 	return VAE(encoder, decoder, T(β), V)
 end
@@ -93,6 +93,11 @@ end
 function elbo_loss(m::VAE{T,V},x) where {T,V<:Val{:unit}}
 	μz, σ2z, μx = infer(m,x)
 	-mean(log_normal(x,μx)) + m.β * mean(kldiv(μz,σ2z))
+end
+
+function decomposed_elbo_loss(m::VAE{T,V},x) where {T,V<:Val{:unit}}
+	μz, σ2z, μx = infer(m,x)
+	-mean(log_normal(x,μx)), mean(kldiv(μz,σ2z))
 end
 
 function wass_dist(m::VAE, x, d)
