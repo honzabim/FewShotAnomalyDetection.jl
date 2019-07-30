@@ -85,12 +85,12 @@ end
 # 	-mean(log_normal(x,μx,σ2x)) + m.β * mean(kldiv(μz,σ2z))
 # end
 
-function loss(m::VAE{T,V},x) where {T,V<:Val{:scalarsigma}}
+function elbo_loss(m::VAE{T,V},x) where {T,V<:Val{:scalarsigma}}
 	μz, σ2z, μx, σ2x = infer(m,x)
 	-mean(log_normal(x,μx,collect(σ2x'))) + mean(kldiv(μz,σ2z))
 end
 
-function loss(m::VAE{T,V},x) where {T,V<:Val{:unit}}
+function elbo_loss(m::VAE{T,V},x) where {T,V<:Val{:unit}}
 	μz, σ2z, μx = infer(m,x)
 	-mean(log_normal(x,μx)) + m.β * mean(kldiv(μz,σ2z))
 end
