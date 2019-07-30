@@ -37,6 +37,12 @@ end
 
 VAE(q,g,β,s::Symbol = :unit) = VAE(q,g,β,Val(s))
 
+function VAE(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, β, V = :unit, T = Float32)
+	encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, hiddenDim, numLayers + 1, nonlinearity, "linear", layerType))
+    decoder = Adapt.adapt(T, FluxExtensions.layerbuilder(latentDim, hiddenDim, inputDim, numLayers + 1, nonlinearity, "linear", layerType))
+	return VAE(encoder, decoder, T(β), V)
+end
+
 Flux.@treelike(VAE)
 
 """
