@@ -23,7 +23,8 @@ kldiv(μ,σ2) = - mean(sum((@.log(σ2) - μ^2 - σ2), dims = 1))
 
 log_normal(x) = - sum((x.^2), dims = 1) ./ 2 .- size(x, 1) * log(2f0 * π) / 2
 log_normal(x, μ) = log_normal(x - μ)
-log_normal(x,μ, σ2::AbstractArray{T}) where {T<:Number} = - sum((x - μ) .^ 2 ./ σ2 .+ log.(σ2 .* 2π), dims = 1) / 2
+log_normal(x, μ, σ2::Vector{T}) where {T<:Number} = - sum((x - μ) .^ 2 ./ σ2' .+ log.(σ2' .* 2π), dims = 1) / 2
+log_normal(x, μ, Σ::Matrix{T}) where {T<:Number} = - (log(det(Σ)) + (x - μ)' * inv(Σ) * (x - μ) + size(Σ, 1) * log(2π)) / 2
 
 """
 	vmfentropy(m, κ)
