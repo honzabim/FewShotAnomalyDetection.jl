@@ -31,7 +31,7 @@ end
 struct VAE_ard{T<:AbstractFloat,V<:Val}
 	q  # encoder (inference modul)
 	g  # decoder (generator)
-    β::T 	#penalization
+    β::AbstractArray{T, 1} 	#penalization = log σ^2
     γ
 	variant::V
 end
@@ -41,7 +41,7 @@ VAE_ard(q,g,β,γ,s::Symbol = :unit) = VAE_ard(q,g,β,γ,Val(s))
 function VAE_ard(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, β, V = :unit, T = Float32)
 	encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, latentDim * 2, numLayers + 1, nonlinearity, "linear", layerType))
     decoder = Adapt.adapt(T, FluxExtensions.layerbuilder(latentDim, hiddenDim, inputDim, numLayers + 1, nonlinearity, "linear", layerType))
-	return VAE_ard(encoder, decoder, T(β), param(ones(T, latentDim)), V)
+	return VAE_ard(encoder, decoder, param([T(β)]), param(ones(T, latentDim)), V)
 end
 
 Flux.@treelike(VAE_ard)
@@ -93,14 +93,18 @@ end
 
 function elbo_loss(m::VAE_ard{T,V},x) where {T,V<:Val{:unit}}
 	μz, σ2z, μx = infer(m,x)
-	-mean(log_normal(x,μx)) + m.β * mean(kldiv(μz,σ2z)) 
+	-mean(log_normal(x,μx)) + exp(m.β[1]) * mean(kldiv(μz,σ2z)) + size(x, 1) * size(x, 1) / 4f0 * m.β[1] * exp(m.β[1])
 end
 
 function elbo_loss_ard(m::VAE_ard{T,V}, x) where {T,V<:Val{:unit}}
     μz, σ2z = zparams(m, x)
     z = gaussiansample(μz, σ2z)
     μx = m.g(z .* m.γ)
-	-mean(log_normal(x, μx)) + m.β * mean(kldiv(μz,σ2z)) 
+	-mean(log_normal(x, μx)) + exp(m.β[1]) * mean(kldiv(μz,σ2z)) + size(x, 1) * size(x, 1) / 4f0 * m.β[1] * exp(m.β[1]) 
+end
+
+function x_from_z(m::VAE_ard{T,V}, z) where {T,V<:Val{:unit}}
+	μx = m.g(z .* m.γ)
 end
 
 function decomposed_elbo_loss(m::VAE_ard{T,V},x) where {T,V<:Val{:unit}}
@@ -160,7 +164,7 @@ end
 function printing_loss(m::VAE_ard{T,V},x) where {T,V<:Val{:unit}}
 	μz, σ2z, μx = infer(m,x)
 	println("MSE:$(-mean(log_normal(x,μx))) Flux.mse: $(Flux.mse(x, μx)) KL: $(mean(kldiv(μz,σ2z)))")
-	-mean(log_normal(x,μx)) + m.β*mean(kldiv(μz,σ2z))
+	-mean(log_normal(x,μx)) + exp(m.β[1]) * mean(kldiv(μz,σ2z)) + size(x, 1) * size(x, 1) / 4f0 * m.β[1] * exp(m.β[1])
 end
 
 function printing_wloss(m::VAE_ard{T,V}, x, d) where {T,V<:Val{:scalarsigma}}
@@ -182,21 +186,21 @@ log_pz(m::VAE_ard, x) = log_normal(hsplitsoftp(m.q(x))[1])
 
 function log_pxexpectedz(m::VAE_ard{T,V},x, σ::AbstractFloat = 1.0) where {T, V<:Val{:unit}}
 	μz, σ2z = hsplitsoftp(m.q(x))
-	log_normal(x,m.g(μz),σ)
+	log_normal(x,m.g(μz .* m.γ),σ)
 end
 
 function log_pxexpectedz(m::VAE_ard{T,V},x, z::AbstractArray) where {T, V<:Val{:unit}}
-	log_normal(x, m.g(z))
+	log_normal(x, m.g(z .* m.γ))
 end
 
 function log_pxexpectedz(m::VAE_ard{T,V}, x) where {T, V<:Val{:scalarsigma}}
 	μz, σ2z = hsplitsoftp(m.q(x))
-	μx, σ2x = hsplit1softp(m.g(μz))
+	μx, σ2x = hsplit1softp(m.g(μz .* m.γ))
 	log_normal(x,μx,collect(σ2x'))
 end
 
 function log_pxexpectedz(m::VAE_ard{T,V}, x, z) where {T, V<:Val{:scalarsigma}}
-	μx, σ2x = hsplit1softp(m.g(z))
+	μx, σ2x = hsplit1softp(m.g(z .* m.γ))
 	log_normal(x,μx,collect(σ2x'))
 end
 
@@ -220,6 +224,7 @@ function log_det_jacobian_encoder_singleinstance(m::VAE_ard, x)
 end
 
 function log_det_jacobian_decoder(m::VAE_ard, z)
+	z = (z .* m.γ).data
 	if size(z, 2) > 1
 		zs = [z[:, i] for i in 1:size(z, 2)]
 		return map(z -> log_det_jacobian_decoder_singleinstance(m, z), zs)
@@ -232,4 +237,23 @@ function log_det_jacobian_decoder_singleinstance(m::VAE_ard, z)
 	@assert size(z, 2) == 1
 	s = svd(jacobian_decoder(m, z).data)
 	d = reduce(+, log.(abs.(s.S))) * 2
+end
+
+jacodeco(m::VAE_ard, x::Vector, z::Vector) = sum(log_normal((z .* m.γ).data)) + sum(log_pxexpectedz(m, x, z)) - det(m.g, (z .* m.γ).data)
+
+function correctedjacodeco(model::VAE_ard, x::Vector, z::Vector)
+	z = (z .* model.γ).data
+	Σ = Flux.data(Flux.Tracker.jacobian(model.g, z))
+	S = svd(Σ)
+	J = inv(S)
+	logd = 2*sum(log.(S.S .+ 1f-6))
+	if (det(I + J * transpose(J)) < 0)
+		# println("determinant = $(det(I + J * transpose(J))) was negative, returning jacodeco = -Inf")
+		# println(J)
+		# println(J * transpose(J))
+		return -Inf32
+	end
+	logpz = log_normal(z, zeros(Float32, size(z)...), I + J * J')[1] # TODO I changed the transpose(J) to J' - might be an issue
+	logpx = FluxExtensions.log_normal(x, x_from_z(model, z).data, 1, length(x) - length(z))[1]
+	logpz + logpx - logd
 end

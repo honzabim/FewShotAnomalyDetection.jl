@@ -25,9 +25,9 @@ function correctedjacodeco(model, x::Vector, z::Vector)
 	J = inv(S)
 	logd = 2*sum(log.(S.S .+ 1f-6))
 	if (det(I + J * transpose(J)) < 0)
-		println("determinant = $(det(I + J * transpose(J))) was negative, returning jacodeco = -Inf")
-		println(J)
-		println(J * transpose(J))
+		# println("determinant = $(det(I + J * transpose(J))) was negative, returning jacodeco = -Inf")
+		# println(J)
+		# println(J * transpose(J))
 		return -Inf32
 	end
 	logpz = log_normal(z, zeros(Float32, size(z)...), I + J * J')[1] # TODO I changed the transpose(J) to J' - might be an issue
