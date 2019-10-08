@@ -31,7 +31,8 @@ end
 struct VAE{T<:AbstractFloat,V<:Val}
 	q  # encoder (inference modul)
 	g  # decoder (generator)
-	β::T 	#penalization
+	# β::AbstractArray{T, 1} 	#penalization
+	β::T
 	variant::V
 end
 
@@ -40,7 +41,7 @@ VAE(q,g,β,s::Symbol = :unit) = VAE(q,g,β,Val(s))
 function VAE(inputDim, hiddenDim, latentDim, numLayers, nonlinearity, layerType, β, V = :unit, T = Float32)
 	encoder = Adapt.adapt(T, FluxExtensions.layerbuilder(inputDim, hiddenDim, latentDim * 2, numLayers + 1, nonlinearity, "linear", layerType))
     decoder = Adapt.adapt(T, FluxExtensions.layerbuilder(latentDim, hiddenDim, V == :unit ? inputDim : inputDim + 1, numLayers + 1, nonlinearity, "linear", layerType))
-	return VAE(encoder, decoder, T(β), V)
+	return VAE(encoder, decoder, param([T(β)]), V)
 end
 
 Flux.@treelike(VAE)
@@ -102,7 +103,7 @@ end
 
 function elbo_loss(m::VAE{T,V},x) where {T,V<:Val{:unit}}
 	μz, σ2z, μx = infer(m,x)
-	-mean(log_normal(x , μx)) + m.β * mean(kldiv(μz,σ2z))
+	-mean(log_normal(x , μx)) + m.β .* mean(kldiv(μz,σ2z))
 end
 
 function decomposed_elbo_loss(m::VAE{T,V},x) where {T,V<:Val{:unit}}
@@ -168,7 +169,7 @@ end
 function printing_loss(m::VAE{T,V},x) where {T,V<:Val{:unit}}
 	μz, σ2z, μx = infer(m,x)
 	println("MSE:$(-mean(log_normal(x,μx))) Flux.mse: $(Flux.mse(x, μx)) KL: $(mean(kldiv(μz,σ2z)))")
-	-mean(log_normal(x,μx)) + m.β*mean(kldiv(μz,σ2z))
+	-mean(log_normal(x,μx)) + m.β.*mean(kldiv(μz,σ2z))
 end
 
 function printing_wloss(m::VAE{T,V}, x, d) where {T,V<:Val{:scalarsigma}}
